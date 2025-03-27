@@ -1,0 +1,26 @@
+{
+    "name": "service-needs-backend",
+    "version": "1.0.0",
+    "description": "backend for service-needs",
+    "main": "index.js",
+    "scripts": {
+        "run": "node index.js",
+        "dev": "nodemon index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/pdridh/service-needs-app.git"
+    },
+    "author": "pdridh",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/pdridh/service-needs-app/issues"
+    },
+    "homepage": "https://github.com/pdridh/service-needs-app#readme",
+    "devDependencies": {
+        "nodemon": "^3.1.9"
+    },
+    "dependencies": {
+        "express": "^4.21.2"
+    }
+}
