@@ -9,14 +9,15 @@ import (
 )
 
 type ServerConfig struct {
-	Env                string
-	Host               string
-	Port               string
-	DatabaseURI        string
-	DatabaseName       string
-	UserCollectionName string
-	JWTSecret          string
-	JWTExpiration      time.Duration
+	Env                    string
+	Host                   string
+	Port                   string
+	DatabaseURI            string
+	DatabaseName           string
+	UserCollectionName     string
+	ProviderCollectionName string
+	JWTSecret              string
+	JWTExpiration          time.Duration
 }
 
 var server *ServerConfig
@@ -37,14 +38,15 @@ func Load() {
 		}
 	}
 	server = &ServerConfig{
-		Env:                env,
-		Host:               getEnvOrDefault("HOST", "localhost"),
-		Port:               getEnvOrDefault("PORT", "8080"),
-		DatabaseURI:        getEnvOrDefault("DB_URI", ""),
-		DatabaseName:       getEnvOrDefault("DB_NAME", "test-service-app"),
-		UserCollectionName: getEnvOrDefault("USER_COLLECTION", "users"),
-		JWTSecret:          getEnvOrDefault("JWT_SECRET", ""),
-		JWTExpiration:      time.Hour * 24, // TODO make this better idk
+		Env:                    env,
+		Host:                   getEnvOrDefault("HOST", "localhost"),
+		Port:                   getEnvOrDefault("PORT", "8080"),
+		DatabaseURI:            getEnvOrDefault("DB_URI", ""),
+		DatabaseName:           getEnvOrDefault("DB_NAME", "test-service-app"),
+		UserCollectionName:     getEnvOrDefault("USER_COLLECTION", "users"),
+		ProviderCollectionName: getEnvOrDefault("PROVIDER_COLLECTIOn", "providers"),
+		JWTSecret:              getEnvOrDefault("JWT_SECRET", ""),
+		JWTExpiration:          time.Hour * 24, // TODO make this better idk
 	}
 }
 
