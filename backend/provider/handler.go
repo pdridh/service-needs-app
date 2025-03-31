@@ -3,12 +3,10 @@ package provider
 import (
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/go-playground/validator"
 	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/auth"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Handler struct {
@@ -26,34 +24,11 @@ func (h *Handler) GetProviders() http.HandlerFunc {
 
 		queries := r.URL.Query()
 
-		// page := queries.Get("page")
-		// limit := queries.Get("limit")
+		page := api.GetIntParamFromQuery(queries, "page", 1, 1, 100)
+		limit := api.GetIntParamFromQuery(queries, "limit", 10, 1, 50)
 
-		filters := bson.M{}
-
-		// TODO this is kinda redundant make this better idk
-
-		page, err := strconv.Atoi(queries.Get("page"))
-		if err != nil || page < 1 {
-			page = 1
-		}
-		limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
-		if err != nil || limit < 1 {
-			limit = 10
-		}
-		if limit > 50 {
-			limit = 50
-		}
-
-		location := queries.Get("location")
-		if location != "" {
-			filters["location"] = location
-		}
-
-		category := queries.Get("category")
-		if category != "" {
-			filters["category"] = category
-		}
+		validFilterKeys := []string{"location", "category"}
+		filters := api.GetFiltersFromQuery(queries, validFilterKeys)
 
 		ps, err := h.Service.GetProviders(filters, page, limit)
 		if err != nil {
@@ -78,11 +53,13 @@ func (h *Handler) RegisterProvider() http.HandlerFunc {
 		var payload ProviderPayload
 		u := auth.CurrentUserID(r)
 
+		// Parse the payload
 		if err := api.ParseJSON(r, &payload); err != nil {
 			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
 			return
 		}
 
+		// Validate the payload
 		var allErrs []error
 		if err := h.Service.validate.Struct(payload); err != nil {
 			for _, e := range err.(validator.ValidationErrors) {
