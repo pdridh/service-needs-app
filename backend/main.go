@@ -10,6 +10,7 @@ import (
 
 	"github.com/pdridh/service-needs-app/backend/config"
 	"github.com/pdridh/service-needs-app/backend/db"
+	"github.com/pdridh/service-needs-app/backend/server"
 )
 
 func main() {
@@ -19,10 +20,7 @@ func main() {
 	db.ConnectToDB()
 	defer db.DisconnectFromDB()
 
-	srv := http.NewServeMux()
-	srv.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world"))
-	})
+	srv := server.New()
 
 	httpServer := &http.Server{
 		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),
