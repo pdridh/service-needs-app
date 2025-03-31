@@ -4,6 +4,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/pdridh/service-needs-app/backend/config"
 	"github.com/pdridh/service-needs-app/backend/user"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type service struct {
@@ -26,10 +27,16 @@ func NewService(store user.UserStore, validate *validator.Validate) *service {
 // USING THE GIVEN ARGUMENTS.
 func (s *service) RegisterUser(email string, password string) (*user.User, error) {
 
+	// Hash the password before storing
+	hashedPassword, err := HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+
 	// Actual registration process
 	u := &user.User{
 		Email:    email,
-		Password: password, //TODO hash this shit
+		Password: hashedPassword,
 	}
 
 	if err := s.store.InsertUser(u); err != nil {
@@ -55,9 +62,13 @@ func (s *service) AuthenticateUser(email string, password string) (string, error
 	}
 
 	// Check if the password is correct
-	// TODO should be checking the hash and shit
-	if password != u.Password {
-		return "", ErrWrongPassword
+	if err := CompareHashedPasswords(u.Password, password); err != nil {
+		switch err {
+		case bcrypt.ErrMismatchedHashAndPassword:
+			return "", ErrWrongPassword
+		default:
+			return "", err
+		}
 	}
 
 	// Everything went well so generate a token for the user

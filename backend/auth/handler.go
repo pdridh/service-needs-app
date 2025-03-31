@@ -21,7 +21,7 @@ func NewHandler(service *service) *Handler {
 func (h *Handler) Register() http.HandlerFunc {
 	type RegisterPayload struct {
 		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required,min=8,max=80"`
+		Password string `json:"password" validate:"required,min=8,max=70"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func (h *Handler) Register() http.HandlerFunc {
 func (h *Handler) Login() http.HandlerFunc {
 	type LoginPayload struct {
 		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required,min=8,max=80"`
+		Password string `json:"password" validate:"required,min=8,max=70"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

@@ -44,14 +44,13 @@ func (s *MongoUserStore) GetUserByEmail(email string) (*User, error) {
 }
 
 // InsertUser inserts the given user into the collection
-// InsertUser is also responsible for timestamp and hashing the password
+// InsertUser is also responsible for timestamp
 // DOESNT DO ANY CHECKS ASSUMES THAT IT HAS ALRDY PASSED CHECKS
 // returns error if any or nil
 func (s *MongoUserStore) InsertUser(u *User) error {
 
 	u.ID = primitive.NewObjectID()
 	u.CreatedAt = primitive.NewDateTimeFromTime(time.Now().UTC())
-	u.Password = u.Password // TODO hash this
 
 	_, err := s.coll.InsertOne(context.TODO(), u)
 	return err
