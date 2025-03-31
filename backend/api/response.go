@@ -1,4 +1,4 @@
-package utils
+package api
 
 import (
 	"compress/gzip"
@@ -36,19 +36,14 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, status int, v any) error 
 	return nil
 }
 
-// Read a request body and parse it.
-// The parsed json is loaded into v unless an error occurs
-func ParseJSON(r *http.Request, v any) error {
-
-	b, err := io.ReadAll(io.LimitReader(r.Body, 1024*1024))
-	if err != nil {
-		return err
+// A wrapper that takes creates an APIError with the given status, message and errors and writes that to the user as json with an appropriate status
+func WriteError(w http.ResponseWriter, r *http.Request, status int, message string, errors any) {
+	if err := WriteJSON(w, r, status, NewAPIError(status, message, errors)); err != nil {
+		// TODO weird ahh error need to handle ts
 	}
+}
 
-	err = json.Unmarshal(b, v)
-	if err != nil {
-		return err
-	}
-
-	return nil
+// Helper that calls WriteError() with args for an internal server error
+func WriteInternalError(w http.ResponseWriter, r *http.Request) {
+	WriteError(w, r, http.StatusInternalServerError, "Internal server error :(", nil)
 }
