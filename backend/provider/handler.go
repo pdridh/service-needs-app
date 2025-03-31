@@ -1,12 +1,13 @@
 package provider
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/go-playground/validator"
 	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/auth"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Handler struct {
@@ -24,19 +25,34 @@ func (h *Handler) GetProviders() http.HandlerFunc {
 
 		queries := r.URL.Query()
 
-		page := api.GetIntParamFromQuery(queries, "page", 1, 1, 100)
-		limit := api.GetIntParamFromQuery(queries, "limit", 10, 1, 50)
-
+		// Filter stuff
 		validFilterKeys := []string{"location", "category"}
 		filters := api.GetFiltersFromQuery(queries, validFilterKeys)
 
-		ps, err := h.Service.GetProviders(filters, page, limit)
+		findOptions := options.Find()
+
+		// Sorting stuff
+		if sortBy, sortOrder := queries.Get("sortBy"), queries.Get("sortOrder"); sortBy != "" && sortOrder != "" {
+			order := 1
+			if sortOrder == "desc" {
+				order = -1
+			}
+			findOptions.SetSort(bson.D{{Key: sortBy, Value: order}})
+		}
+
+		// Pagination stuff
+		page := api.GetIntParamFromQuery(queries, "page", 1, 1, 100)
+		limit := api.GetIntParamFromQuery(queries, "limit", 10, 1, 50)
+		skip := (page - 1) * limit
+		findOptions.SetLimit(int64(limit)).SetSkip(int64(skip))
+
+		// Finally after applying all the filters and options query the store
+		ps, err := h.Service.GetProviders(filters, findOptions)
 		if err != nil {
 			api.WriteInternalError(w, r)
 			return
 		}
 
-		log.Println(ps)
 		api.WriteJSON(w, r, http.StatusOK, ps)
 	}
 }

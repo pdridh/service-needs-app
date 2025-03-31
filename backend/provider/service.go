@@ -3,6 +3,7 @@ package provider
 import (
 	"github.com/go-playground/validator"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Service struct {
@@ -17,8 +18,8 @@ func NewService(store ProviderStore, validate *validator.Validate) *Service {
 	}
 }
 
-func (s *Service) GetProviders(filters bson.M, page int, limit int) ([]bson.M, error) {
-	return s.store.GetProviders(filters, page, limit)
+func (s *Service) GetProviders(filters bson.M, options *options.FindOptions) ([]bson.M, error) {
+	return s.store.GetProviders(filters, options)
 }
 
 func (s *Service) RegisterProvider(userid string, name string, category string, location string, description string) (*Provider, error) {

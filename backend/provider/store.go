@@ -11,7 +11,7 @@ import (
 )
 
 type ProviderStore interface {
-	GetProviders(filters bson.M, page int, limit int) ([]bson.M, error)
+	GetProviders(filters bson.M, options *options.FindOptions) ([]bson.M, error)
 	InsertProvider(u string, p *Provider) error
 }
 
@@ -24,12 +24,8 @@ func NewMongoStore(coll *mongo.Collection) *mongoProviderStore {
 	return &mongoProviderStore{coll: coll}
 }
 
-func (s *mongoProviderStore) GetProviders(filters bson.M, page int, limit int) ([]bson.M, error) {
-
-	skip := (page - 1) * limit
-	findOptions := options.Find().SetLimit(int64(limit)).SetSkip(int64(skip))
-
-	cur, err := s.coll.Find(context.TODO(), filters, findOptions)
+func (s *mongoProviderStore) GetProviders(filters bson.M, options *options.FindOptions) ([]bson.M, error) {
+	cur, err := s.coll.Find(context.TODO(), filters, options)
 	if err != nil {
 		return nil, err
 	}
