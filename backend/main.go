@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/pdridh/service-needs-app/backend/config"
+	"github.com/pdridh/service-needs-app/backend/db"
 )
 
 func main() {
+	config.Load()
 
-	config := struct {
-		Host string
-		Port string
-	}{
-		Host: "localhost",
-		Port: "8080",
-	} //TODO move this to some kind of config loading thingy pkg
+	// Connect to db
+	db.ConnectToDB()
+	defer db.DisconnectFromDB()
 
 	srv := http.NewServeMux()
 	srv.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +25,7 @@ func main() {
 	})
 
 	httpServer := &http.Server{
-		Addr:         net.JoinHostPort(config.Host, config.Port),
+		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),
 		Handler:      srv,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

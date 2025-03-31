@@ -8,8 +8,9 @@ import (
 )
 
 type ServerConfig struct {
-	Host string
-	Port string
+	Host        string
+	Port        string
+	DatabaseURI string
 }
 
 var server *ServerConfig
@@ -30,8 +31,9 @@ func Load() {
 		}
 	}
 	server = &ServerConfig{
-		Host: getEnvOrDefault("HOST", "localhost"),
-		Port: getEnvOrDefault("PORT", "8080"),
+		Host:        getEnvOrDefault("HOST", "localhost"),
+		Port:        getEnvOrDefault("PORT", "8080"),
+		DatabaseURI: getEnvOrDefault("DB_URI", ""),
 	}
 }
 
