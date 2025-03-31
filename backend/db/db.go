@@ -40,3 +40,8 @@ func GetClient() *mongo.Client {
 
 	return client
 }
+
+// Helper to access a collection from a db using the client
+func GetCollectionFromDB(db string, coll string) *mongo.Collection {
+	return GetClient().Database(db).Collection(coll)
+}
