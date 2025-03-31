@@ -13,13 +13,7 @@ func AddRoutes(
 	mux *http.ServeMux,
 	authHandler *auth.Handler,
 ) {
-	mux.Handle("GET /", helloWorldHandler())
 	mux.Handle("POST /auth/register", authHandler.Register())
+	mux.Handle("POST /auth/login", authHandler.Login())
 	mux.Handle("/", http.NotFoundHandler())
-}
-
-func helloWorldHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world"))
-	}
 }
