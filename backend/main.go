@@ -12,6 +12,7 @@ import (
 	"github.com/pdridh/service-needs-app/backend/auth"
 	"github.com/pdridh/service-needs-app/backend/config"
 	"github.com/pdridh/service-needs-app/backend/db"
+	"github.com/pdridh/service-needs-app/backend/provider"
 	"github.com/pdridh/service-needs-app/backend/server"
 	"github.com/pdridh/service-needs-app/backend/user"
 )
@@ -23,12 +24,17 @@ func main() {
 	db.ConnectToDB()
 	defer db.DisconnectFromDB()
 
-	userStore := user.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().UserCollectionName))
 	validate := validator.New()
+
+	userStore := user.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().UserCollectionName))
+	providerStore := provider.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ProviderCollectionName))
+	providerService := provider.NewService(providerStore, validate)
+	providerHandler := provider.NewHandler(providerService)
+
 	authService := auth.NewService(userStore, validate)
 	authHandler := auth.NewHandler(authService)
 
-	srv := server.New(authHandler)
+	srv := server.New(authHandler, providerHandler)
 
 	httpServer := &http.Server{
 		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),
