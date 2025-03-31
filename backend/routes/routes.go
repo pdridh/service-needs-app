@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/auth"
 )
 
@@ -15,5 +17,14 @@ func AddRoutes(
 ) {
 	mux.Handle("POST /auth/register", authHandler.Register())
 	mux.Handle("POST /auth/login", authHandler.Login())
+
+	mux.Handle("GET /protected", auth.Middleware(ProtectedHandler()))
+
 	mux.Handle("/", http.NotFoundHandler())
+}
+
+func ProtectedHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		api.WriteJSON(w, r, http.StatusOK, fmt.Sprintf("Hello %s", auth.CurrentUserID(r)))
+	}
 }

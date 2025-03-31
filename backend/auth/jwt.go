@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/pdridh/service-needs-app/backend/common"
 	"github.com/pdridh/service-needs-app/backend/config"
 )
 
-// Generate a jwt with common.UserClaims and sets the id given as the user of the claim.
+// Generate a jwt with UserClaims and sets the id given as the user of the claim.
 // Returns the token as a string.
 func GenerateJWT(id string, duration time.Duration) (string, error) {
-	claims := common.UserClaims{
+	claims := UserClaims{
 		UserID: id,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -28,7 +27,7 @@ func GenerateJWT(id string, duration time.Duration) (string, error) {
 // Also checks if the signing method is the same as the generate.
 // If its invalid then its returned as an error
 func ValidateJWT(tokenString string) (*jwt.Token, error) {
-	return jwt.ParseWithClaims(tokenString, &common.UserClaims{}, func(token *jwt.Token) (any, error) {
+	return jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (any, error) {
 
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, ErrUnexpectedJWTSigningMethod
@@ -52,4 +51,15 @@ func SetJWTCookie(w http.ResponseWriter, token string) {
 	}
 
 	http.SetCookie(w, &cookie)
+}
+
+// Given a token extracts the claims as UserClaims and returns the claims
+// Returns error if extraction was not succesful.
+func UserClaimsFromJWT(t *jwt.Token) (*UserClaims, error) {
+	c, ok := t.Claims.(*UserClaims)
+	if !ok {
+		return nil, jwt.ErrTokenInvalidClaims
+	}
+
+	return c, nil
 }
