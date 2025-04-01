@@ -108,7 +108,8 @@ func (h *Handler) AddReview() http.HandlerFunc {
 
 		// Check if theres already a review with this business id and consumer id combo
 		filters := bson.M{"business_id": bid, "consumer_id": cid}
-		results, err := h.Service.GetBusinesses(filters, nil)
+		// All reviews that have business id and consumer id that matches
+		results, err := h.Service.GetReviews(filters, nil)
 		if err != nil {
 			api.WriteInternalError(w, r)
 			return

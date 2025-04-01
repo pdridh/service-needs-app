@@ -40,10 +40,13 @@ func (s *Service) AddReview(r *review.Review) error {
 	return s.reviewStore.CreateReview(r)
 }
 
-func (s *Service) GetBusinessReviews() {
-	// queries := r.URL.Query()
+// TODO this kind of shares some shit with consumer and shit and review and shit, idk maybe we can move it idk idk idk
+func (s *Service) GetReviews(filters bson.M, options *options.FindOptions) ([]bson.M, error) {
+	return s.reviewStore.GetReviews(filters, options)
+}
 
-	// // Filter stuff
+func (s *Service) GetBusinessReviews() {
+
 	// validFilterKeys := []string{"location", "category"}
 	// filters := api.GetFiltersFromQuery(queries, validFilterKeys)
 
