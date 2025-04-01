@@ -139,3 +139,47 @@ func (h *Handler) AddReview() http.HandlerFunc {
 		api.WriteJSON(w, r, http.StatusCreated, review)
 	}
 }
+
+func (h *Handler) GetBusinessReviews() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		businessIDStr := r.PathValue("id")
+		bid, err := primitive.ObjectIDFromHex(businessIDStr)
+		if err != nil {
+			api.WriteError(w, r, http.StatusNotFound, "Business not found", nil)
+			return
+		}
+
+		// TODO FIX THIS, this whole query shit is very redundant LITERALLY copy pasted from mathi ko "GetBusinesses" maybe fix that ionno
+
+		queries := r.URL.Query()
+
+		filters := bson.M{"business_id": bid}
+		findOptions := options.Find()
+
+		// TODO icl this feels like a security vuln since im not checking what we are sorting by, idk its just my cybersec side tingling
+		// Sorting stuff
+		if sortBy, sortOrder := queries.Get("sortBy"), queries.Get("sortOrder"); sortBy != "" && sortOrder != "" {
+			order := 1
+			if sortOrder == "desc" {
+				order = -1
+			}
+			findOptions.SetSort(bson.D{{Key: sortBy, Value: order}})
+		}
+
+		// Pagination stuff
+		page := api.GetIntParamFromQuery(queries, "page", 1, 1, 100)
+		limit := api.GetIntParamFromQuery(queries, "limit", 10, 1, 50)
+		skip := (page - 1) * limit
+		findOptions.SetLimit(int64(limit)).SetSkip(int64(skip))
+
+		// Finally after applying all the filters and options query the store
+		reviews, err := h.Service.GetReviews(filters, findOptions)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		// TODO again, make ts more standard
+		api.WriteJSON(w, r, http.StatusOK, reviews)
+	}
+}

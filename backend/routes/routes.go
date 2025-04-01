@@ -20,6 +20,7 @@ func AddRoutes(
 
 	mux.Handle("GET /api/v1/businesses", auth.Middleware(businessHandler.GetBusinesses()))
 
+	mux.Handle("GET /api/v1/businesses/{id}/reviews", auth.Middleware(businessHandler.GetBusinessReviews()))
 	mux.Handle("POST /api/v1/businesses/{id}/reviews", auth.Middleware(businessHandler.AddReview()))
 
 	mux.Handle("/", http.NotFoundHandler())
