@@ -84,7 +84,7 @@ func (h *Handler) AddReview() http.HandlerFunc {
 
 		bid, err := primitive.ObjectIDFromHex(businessIDStr)
 		if err != nil {
-			api.WriteInternalError(w, r)
+			api.WriteError(w, r, http.StatusNotFound, "Business not found", nil)
 			return
 		}
 
@@ -102,7 +102,7 @@ func (h *Handler) AddReview() http.HandlerFunc {
 		}
 
 		if !valid {
-			api.WriteError(w, r, http.StatusNotFound, "business not found", nil)
+			api.WriteError(w, r, http.StatusNotFound, "Business not found", nil)
 			return
 		}
 
