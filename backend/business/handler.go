@@ -1,10 +1,13 @@
 package business
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/pdridh/service-needs-app/backend/api"
+	"github.com/pdridh/service-needs-app/backend/review"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -52,5 +55,86 @@ func (h *Handler) GetBusinesses() http.HandlerFunc {
 		}
 
 		api.WriteJSON(w, r, http.StatusOK, ps)
+	}
+}
+
+func (h *Handler) AddReview() http.HandlerFunc {
+
+	type ReviewPayload struct {
+		Rating  json.Number `json:"rating" validate:"required,min=0,max=5,numeric"`
+		Comment string      `json:"comment" validate:"required,min=3,max=100"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		businessIDStr := r.PathValue("id")
+		consumerIDstr := api.CurrentUserID(r)
+
+		var p ReviewPayload
+
+		if err := api.ParseJSON(r, &p); err != nil {
+			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
+			return
+		}
+
+		ratingf64, err := p.Rating.Float64()
+		if err != nil {
+			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
+			return
+		}
+
+		bid, err := primitive.ObjectIDFromHex(businessIDStr)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		cid, err := primitive.ObjectIDFromHex(consumerIDstr)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		// Check if the business id is valid
+		valid, err := h.Service.IsValidID(bid.Hex())
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		if !valid {
+			api.WriteError(w, r, http.StatusNotFound, "business not found", nil)
+			return
+		}
+
+		// Check if theres already a review with this business id and consumer id combo
+		filters := bson.M{"business_id": bid, "consumer_id": cid}
+		results, err := h.Service.GetBusinesses(filters, nil)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		// If found that means theres already a review made by this consumer
+		if len(results) > 0 {
+			api.WriteError(w, r, http.StatusConflict, "already reviewed, edit review in some other path (cuz u not using frontend u bad)", nil)
+			return
+		}
+
+		// If it got to this point we are good to go ahead
+		review := &review.Review{
+			BusinessID: bid,
+			ConsumerID: cid,
+			Rating:     float32(ratingf64),
+			Comment:    p.Comment,
+		}
+
+		if err := h.Service.AddReview(review); err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		// TODO replace WriteJSON with some kinda WriteSuccess type shit
+		// TODO also make the response more standard like "data" or something idk
+		api.WriteJSON(w, r, http.StatusCreated, review)
 	}
 }

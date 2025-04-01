@@ -113,6 +113,7 @@ func (h *Handler) Login() http.HandlerFunc {
 
 		// Passed everything meaning the authentication was succesful, lets give the user a token
 		SetJWTCookie(w, t)
+		// TODO make the response more standard
 		api.WriteJSON(w, r, http.StatusOK, "Login succesfull!")
 	}
 }

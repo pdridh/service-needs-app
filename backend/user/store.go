@@ -18,6 +18,11 @@ type mongoStore struct {
 	coll *mongo.Collection
 }
 
+// Creates a new mongo store with the collection and returns a ptr to it.
+func NewMongoStore(coll *mongo.Collection) *mongoStore {
+	return &mongoStore{coll: coll}
+}
+
 // Helper function to get a user by a dynamic field and its value
 // Returns a ptr to a User struct or nil if not found
 func (s *mongoStore) getUserByField(field string, value string) (*User, error) {
@@ -54,9 +59,4 @@ func (s *mongoStore) CreateUser(ctx context.Context, u *User) error {
 
 	_, err := s.coll.InsertOne(ctx, u)
 	return err
-}
-
-// Creates a new mongo store with the collection and returns a ptr to it.
-func NewMongoStore(coll *mongo.Collection) *mongoStore {
-	return &mongoStore{coll: coll}
 }

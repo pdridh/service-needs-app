@@ -14,6 +14,7 @@ import (
 	"github.com/pdridh/service-needs-app/backend/config"
 	"github.com/pdridh/service-needs-app/backend/consumer"
 	"github.com/pdridh/service-needs-app/backend/db"
+	"github.com/pdridh/service-needs-app/backend/review"
 	"github.com/pdridh/service-needs-app/backend/server"
 	"github.com/pdridh/service-needs-app/backend/user"
 )
@@ -27,10 +28,12 @@ func main() {
 
 	validate := validator.New()
 
+	// TODO this feels redundant and shitty change this idk
 	userStore := user.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().UserCollectionName))
 	businessStore := business.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().BusinessCollectionName))
 	consumerStore := consumer.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ConsumerCollectionName))
-	businessService := business.NewService(businessStore, validate)
+	reviewStore := review.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ReviewCollectionName))
+	businessService := business.NewService(businessStore, reviewStore, validate)
 	businessHandler := business.NewHandler(businessService)
 
 	authService := auth.NewService(db.GetClient(), userStore, businessStore, consumerStore, validate)

@@ -34,7 +34,7 @@ func Middleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// If the token is valid and the claims were extracted then create a new context with the userid
 		// For future handlers to access
-		ctx := context.WithValue(r.Context(), ContextUserKey, c.UserID)
+		ctx := context.WithValue(r.Context(), api.ContextUserKey, c.UserID)
 
 		next(w, r.WithContext(ctx))
 	}

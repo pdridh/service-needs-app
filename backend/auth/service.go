@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"log"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/service-needs-app/backend/api"
@@ -66,9 +65,6 @@ func (s *service) RegisterUser(email string, password string, userType string, b
 			Password: hashedPassword,
 			Type:     userType,
 		}
-
-		log.Println("User created")
-		log.Println(u)
 
 		if err := s.userStore.CreateUser(sc, u); err != nil {
 			session.AbortTransaction(sc)
