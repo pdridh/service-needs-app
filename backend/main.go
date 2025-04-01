@@ -8,11 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/service-needs-app/backend/auth"
+	"github.com/pdridh/service-needs-app/backend/business"
 	"github.com/pdridh/service-needs-app/backend/config"
+	"github.com/pdridh/service-needs-app/backend/consumer"
 	"github.com/pdridh/service-needs-app/backend/db"
-	"github.com/pdridh/service-needs-app/backend/provider"
 	"github.com/pdridh/service-needs-app/backend/server"
 	"github.com/pdridh/service-needs-app/backend/user"
 )
@@ -27,14 +28,15 @@ func main() {
 	validate := validator.New()
 
 	userStore := user.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().UserCollectionName))
-	providerStore := provider.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ProviderCollectionName))
-	providerService := provider.NewService(providerStore, validate)
-	providerHandler := provider.NewHandler(providerService)
+	businessStore := business.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().BusinessCollectionName))
+	consumerStore := consumer.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ConsumerCollectionName))
+	businessService := business.NewService(businessStore, validate)
+	businessHandler := business.NewHandler(businessService)
 
-	authService := auth.NewService(userStore, validate)
+	authService := auth.NewService(db.GetClient(), userStore, businessStore, consumerStore, validate)
 	authHandler := auth.NewHandler(authService)
 
-	srv := server.New(authHandler, providerHandler)
+	srv := server.New(authHandler, businessHandler)
 
 	httpServer := &http.Server{
 		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),

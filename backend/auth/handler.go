@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/service-needs-app/backend/api"
 )
 
@@ -19,9 +19,13 @@ func NewHandler(service *service) *Handler {
 }
 
 func (h *Handler) Register() http.HandlerFunc {
+
 	type RegisterPayload struct {
-		Email    string `json:"email" validate:"required,email"`
-		Password string `json:"password" validate:"required,min=8,max=70"`
+		Email        string               `json:"email" validate:"required,email"`
+		Password     string               `json:"password" validate:"required,min=8,max=70"`
+		Type         string               `json:"type" validate:"required,oneof=business consumer"`
+		BusinessInfo *api.BusinessPayload `json:"businessInfo,omitempty"`
+		ConsumerInfo *api.ConsumerPayload `json:"consumerInfo,omitempty"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -56,15 +60,14 @@ func (h *Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		u, err := h.Service.RegisterUser(p.Email, p.Password)
+		res, err := h.Service.RegisterUser(p.Email, p.Password, p.Type, p.BusinessInfo, p.ConsumerInfo)
 		if err != nil {
 			api.WriteInternalError(w, r)
 			return
 		}
 
-		// Passed everything and therefore user is registered
-		// Inform the user that it was succesful
-		api.WriteJSON(w, r, http.StatusCreated, u)
+		// Passed everything and therefore let the frontend know it was a success
+		api.WriteJSON(w, r, http.StatusCreated, res)
 	}
 }
 

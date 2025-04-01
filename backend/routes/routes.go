@@ -6,7 +6,7 @@ import (
 
 	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/auth"
-	"github.com/pdridh/service-needs-app/backend/provider"
+	"github.com/pdridh/service-needs-app/backend/business"
 )
 
 // Sets all the handlers to handle the appropriate routes
@@ -15,15 +15,14 @@ import (
 func AddRoutes(
 	mux *http.ServeMux,
 	authHandler *auth.Handler,
-	providerHandler *provider.Handler,
+	businessHandler *business.Handler,
 ) {
 	mux.Handle("POST /auth/register", authHandler.Register())
 	mux.Handle("POST /auth/login", authHandler.Login())
 
 	mux.Handle("GET /protected", auth.Middleware(ProtectedHandler()))
 
-	mux.Handle("POST /services", auth.Middleware(providerHandler.RegisterProvider()))
-	mux.Handle("GET /services", auth.Middleware(providerHandler.GetProviders()))
+	mux.Handle("GET /api/v1/businesses", auth.Middleware(businessHandler.GetBusinesses()))
 
 	mux.Handle("/", http.NotFoundHandler())
 }

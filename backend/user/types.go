@@ -9,5 +9,12 @@ type User struct {
 	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id"`
 	Email     string             `json:"email" bson:"email"`
 	Password  string             `json:"-" bson:"password"`
-	CreatedAt primitive.DateTime `json:"created_at" bson:"created_at"`
+	Type      string             `json:"type" bson:"type"`
+	CreatedAt primitive.DateTime `json:"createdAt" bson:"created_at"`
+	UpdatedAt primitive.DateTime `json:"updatedAt" bson:"updated_at"`
 }
+
+const (
+	UserTypeBusiness = "business"
+	UserTypeConsumer = "consumer"
+)

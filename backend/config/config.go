@@ -15,7 +15,8 @@ type ServerConfig struct {
 	DatabaseURI            string
 	DatabaseName           string
 	UserCollectionName     string
-	ProviderCollectionName string
+	BusinessCollectionName string
+	ConsumerCollectionName string
 	JWTSecret              string
 	JWTExpiration          time.Duration
 }
@@ -44,7 +45,8 @@ func Load() {
 		DatabaseURI:            getEnvOrDefault("DB_URI", ""),
 		DatabaseName:           getEnvOrDefault("DB_NAME", "test-service-app"),
 		UserCollectionName:     getEnvOrDefault("USER_COLLECTION", "users"),
-		ProviderCollectionName: getEnvOrDefault("PROVIDER_COLLECTIOn", "providers"),
+		BusinessCollectionName: getEnvOrDefault("BUSINESS_COLLECTION", "businesses"),
+		ConsumerCollectionName: getEnvOrDefault("CONSUMER_COLLECTION", "consumers"),
 		JWTSecret:              getEnvOrDefault("JWT_SECRET", ""),
 		JWTExpiration:          time.Hour * 24, // TODO make this better idk
 	}
