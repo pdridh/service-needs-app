@@ -5,8 +5,7 @@ import (
 )
 
 type Consumer struct {
-	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id"`
-	UserID    primitive.ObjectID `json:"-" bson:"user_id"`
+	ID        primitive.ObjectID `json:"id" bson:"_id"`
 	FirstName string             `json:"firstName" bson:"first_name"`
 	LastName  string             `json:"lastName" bson:"last_name"`
 	Verified  bool               `json:"verified" bson:"verified"`

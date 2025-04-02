@@ -63,7 +63,6 @@ func (s *mongoStore) GetBusinessByID(id string) (*Business, error) {
 
 // Inserts the given business into the collection using the given ctx.
 func (s *mongoStore) CreateBusiness(ctx context.Context, b *Business) error {
-	b.ID = primitive.NewObjectID()
 	b.CreatedAt = primitive.NewDateTimeFromTime(time.Now().UTC())
 	b.UpdatedAt = b.CreatedAt
 

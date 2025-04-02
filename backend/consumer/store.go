@@ -24,7 +24,6 @@ func NewMongoStore(coll *mongo.Collection) *mongoStore {
 // Given a consumer struct ptr adds required fields and inserts into the collection using the given context
 // DOESNT DO ANY CHECKS.
 func (s *mongoStore) CreateConsumer(ctx context.Context, c *Consumer) error {
-	c.ID = primitive.NewObjectID()
 	c.CreatedAt = primitive.NewDateTimeFromTime(time.Now().UTC())
 	c.UpdatedAt = c.CreatedAt
 

@@ -149,6 +149,18 @@ func (h *Handler) GetBusinessReviews() http.HandlerFunc {
 			return
 		}
 
+		// Check if the business id is valid
+		valid, err := h.Service.IsValidID(bid.Hex())
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		if !valid {
+			api.WriteError(w, r, http.StatusNotFound, "Business not found", nil)
+			return
+		}
+
 		// TODO FIX THIS, this whole query shit is very redundant LITERALLY copy pasted from mathi ko "GetBusinesses" maybe fix that ionno
 
 		queries := r.URL.Query()

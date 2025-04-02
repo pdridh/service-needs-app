@@ -44,6 +44,7 @@ func (h *Handler) Register() http.HandlerFunc {
 			}
 		}
 
+		// TODO move this inside and in the registration itself and return err for conflict thats handled with a switch
 		available, err := h.Service.IsEmailAvailable(p.Email)
 		if err != nil {
 			api.WriteInternalError(w, r)

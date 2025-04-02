@@ -78,7 +78,7 @@ func (s *service) RegisterUser(email string, password string, userType string, b
 		switch userType {
 		case user.UserTypeBusiness:
 			b := &business.Business{
-				UserID:      uid,
+				ID:          uid,
 				Name:        businessInfo.Name,
 				Category:    businessInfo.Category,
 				Location:    businessInfo.Location,
@@ -92,7 +92,7 @@ func (s *service) RegisterUser(email string, password string, userType string, b
 			result = b
 		case user.UserTypeConsumer:
 			c := &consumer.Consumer{
-				UserID:    uid,
+				ID:        uid,
 				FirstName: consumerInfo.FirstName,
 				LastName:  consumerInfo.LastName,
 				Verified:  false,
