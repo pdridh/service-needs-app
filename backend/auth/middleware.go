@@ -10,7 +10,7 @@ import (
 // Takes a handler function and only calls it if
 // the jwt token it extracts from the request's is valid.
 // The next handler function is called with the userid in context
-func Middleware(next http.HandlerFunc) http.HandlerFunc {
+func Middleware(next http.HandlerFunc, allow string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jCookie, err := r.Cookie("jwt")
 		if err != nil {
@@ -32,10 +32,20 @@ func Middleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// If the token is valid and the claims were extracted then create a new context with the userid
-		// For future handlers to access
-		ctx := context.WithValue(r.Context(), api.ContextUserKey, c.UserID)
+		// If the token is valid and the claims were extracted then create a
+		// new context with the current user for future handlers to access.
+		ctx := context.WithValue(r.Context(), api.ContextUserKey, api.CurrentUser{ID: c.UserID, Type: c.UserType})
 
-		next(w, r.WithContext(ctx))
+		// If we are allowing anyone with auth
+		if allow == "" {
+			next(w, r.WithContext(ctx))
+			return
+		} else if allow == c.UserType {
+			// If we are only allowing users with the same type as allowed type
+			next(w, r.WithContext(ctx))
+			return
+		} else {
+			api.WriteError(w, r, http.StatusForbidden, "not allowed to use this route", nil)
+		}
 	}
 }
