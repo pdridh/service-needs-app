@@ -11,7 +11,7 @@ import (
 )
 
 type Store interface {
-	GetReviews(filters bson.M, options *options.FindOptions) ([]bson.M, error) // Given a business id return all of its reviews
+	GetReviews(filters bson.M, options *options.FindOptions) ([]Review, error) // Given a business id return all of its reviews
 	CreateReview(r *Review) error                                              // Create a document in this collection with the given review struct ptr (also fills other fields for that struct)
 }
 
@@ -25,19 +25,27 @@ func NewMongoStore(coll *mongo.Collection) *mongoStore {
 	}
 }
 
-func (s *mongoStore) GetReviews(filters bson.M, options *options.FindOptions) ([]bson.M, error) {
+func (s *mongoStore) GetReviews(filters bson.M, options *options.FindOptions) ([]Review, error) {
 	cur, err := s.coll.Find(context.TODO(), filters, options)
 	if err != nil {
 		return nil, err
 	}
 	defer cur.Close(context.TODO())
 
-	var results []bson.M
-	if err := cur.All(context.TODO(), &results); err != nil {
+	var reviews []Review
+	for cur.Next(context.TODO()) {
+		var r Review
+		if err := cur.Decode(&r); err != nil {
+			return nil, err
+		}
+		reviews = append(reviews, r)
+	}
+
+	if err := cur.Err(); err != nil {
 		return nil, err
 	}
 
-	return results, nil
+	return reviews, nil
 }
 
 func (s *mongoStore) CreateReview(r *Review) error {

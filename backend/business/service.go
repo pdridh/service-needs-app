@@ -21,7 +21,7 @@ func NewService(bstore Store, rstore review.Store, validate *validator.Validate)
 	}
 }
 
-func (s *Service) GetBusinesses(filters bson.M, options *options.FindOptions) ([]bson.M, error) {
+func (s *Service) GetBusinesses(filters bson.M, options *options.FindOptions) ([]Business, error) {
 	return s.businessStore.GetBusinesses(filters, options)
 }
 
@@ -41,6 +41,6 @@ func (s *Service) AddReview(r *review.Review) error {
 }
 
 // TODO this kind of shares some shit with consumer and shit and review and shit, idk maybe we can move it idk idk idk
-func (s *Service) GetReviews(filters bson.M, options *options.FindOptions) ([]bson.M, error) {
+func (s *Service) GetReviews(filters bson.M, options *options.FindOptions) ([]review.Review, error) {
 	return s.reviewStore.GetReviews(filters, options)
 }

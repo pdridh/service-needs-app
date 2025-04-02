@@ -11,7 +11,7 @@ import (
 )
 
 type Store interface {
-	GetBusinesses(filters bson.M, options *options.FindOptions) ([]bson.M, error)
+	GetBusinesses(filters bson.M, options *options.FindOptions) ([]Business, error)
 	GetBusinessByID(id string) (*Business, error)
 	CreateBusiness(ctx context.Context, b *Business) error
 }
@@ -25,19 +25,27 @@ func NewMongoStore(coll *mongo.Collection) *mongoStore {
 	return &mongoStore{coll: coll}
 }
 
-func (s *mongoStore) GetBusinesses(filters bson.M, options *options.FindOptions) ([]bson.M, error) {
+func (s *mongoStore) GetBusinesses(filters bson.M, options *options.FindOptions) ([]Business, error) {
 	cur, err := s.coll.Find(context.TODO(), filters, options)
 	if err != nil {
 		return nil, err
 	}
 	defer cur.Close(context.TODO())
 
-	var results []bson.M
-	if err := cur.All(context.TODO(), &results); err != nil {
+	var businesses []Business
+	for cur.Next(context.TODO()) {
+		var b Business
+		if err := cur.Decode(&b); err != nil {
+			return nil, err
+		}
+		businesses = append(businesses, b)
+	}
+
+	if err := cur.Err(); err != nil {
 		return nil, err
 	}
 
-	return results, nil
+	return businesses, nil
 }
 
 func (s *mongoStore) GetBusinessByID(id string) (*Business, error) {
