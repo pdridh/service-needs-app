@@ -148,7 +148,7 @@ func (s *service) AuthenticateUser(email string, password string) (string, error
 	}
 
 	// Everything went well so generate a token for the user
-	t, err := GenerateJWT(u.ID.Hex(), config.Server().JWTExpiration)
+	t, err := GenerateJWT(u.ID.Hex(), u.Type, config.Server().JWTExpiration)
 	if err != nil {
 		return "", err
 	}

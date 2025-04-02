@@ -8,11 +8,12 @@ import (
 	"github.com/pdridh/service-needs-app/backend/config"
 )
 
-// Generate a jwt with UserClaims and sets the id given as the user of the claim.
+// Generate a jwt with id and userType as the user's claims
 // Returns the token as a string.
-func GenerateJWT(id string, duration time.Duration) (string, error) {
+func GenerateJWT(id string, userType string, duration time.Duration) (string, error) {
 	claims := UserClaims{
-		UserID: id,
+		UserID:   id,
+		UserType: userType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),

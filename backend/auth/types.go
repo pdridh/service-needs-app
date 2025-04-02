@@ -3,6 +3,7 @@ package auth
 import "github.com/golang-jwt/jwt/v5"
 
 type UserClaims struct {
-	UserID string
+	UserID   string
+	UserType string
 	jwt.RegisteredClaims
 }
