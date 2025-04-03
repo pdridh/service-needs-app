@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/review"
@@ -24,9 +26,7 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) GetBusinesses() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		queries := r.URL.Query()
-		log.Println(queries)
 
 		// Filter stuff
 		validFilterKeys := []string{"category"}
@@ -48,6 +48,25 @@ func (h *Handler) GetBusinesses() http.HandlerFunc {
 		limit := api.GetIntParamFromQuery(queries, "limit", 10, 1, 50)
 		skip := (page - 1) * limit
 		findOptions.SetLimit(int64(limit)).SetSkip(int64(skip))
+
+		// Geolocation query
+		if locStr := queries.Get("location"); locStr != "" {
+			parts := strings.Split(locStr, ",")
+			if len(parts) == 2 {
+				lon, err1 := strconv.ParseFloat(parts[0], 64)
+				lat, err2 := strconv.ParseFloat(parts[1], 64)
+				if err1 == nil && err2 == nil {
+					// Meters
+					maxDistance := api.GetIntParamFromQuery(queries, "maxDistance", 5000, 100, 50000)
+					filters["location"] = bson.M{
+						"$near": bson.M{
+							"$geometry":    bson.M{"type": "Point", "coordinates": []float64{lon, lat}},
+							"$maxDistance": maxDistance,
+						},
+					}
+				}
+			}
+		}
 
 		// Finally after applying all the filters and options query the store
 		ps, err := h.Service.GetBusinesses(filters, findOptions)

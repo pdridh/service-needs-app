@@ -27,8 +27,8 @@ func (h *Handler) RegisterBusiness() http.HandlerFunc {
 		Password    string      `json:"password" validate:"required,min=8,max=70"`
 		Name        string      `json:"name" validate:"required,min=3,max=30"`
 		Category    string      `json:"category" validate:"required"`
-		Longitude   json.Number `json:"longitude" validate:"required"`
-		Latitude    json.Number `json:"latitude" validate:"required"`
+		Longitude   json.Number `json:"longitude" validate:"required,min=-180,max=180"`
+		Latitude    json.Number `json:"latitude" validate:"required,min=-90,max=90"`
 		Description string      `json:"description"`
 	}
 
