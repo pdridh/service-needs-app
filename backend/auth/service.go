@@ -75,7 +75,7 @@ func (s *service) RegisterBusiness(email string, password string, name string, c
 			ID:       uid,
 			Name:     name,
 			Category: category,
-			Location: common.GeoLocation{
+			Location: common.GeoJSONPoint{
 				Type:        "Point",
 				Coordinates: []float64{longitude, latitude},
 			},
