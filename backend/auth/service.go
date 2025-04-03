@@ -135,7 +135,7 @@ func (s *service) RegisterConsumer(email string, password string, firstName stri
 		u := &user.User{
 			Email:    email,
 			Password: hashedPassword,
-			Type:     user.UserTypeBusiness,
+			Type:     user.UserTypeConsumer,
 		}
 
 		if err := s.userStore.CreateUser(sc, u); err != nil {
