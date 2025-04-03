@@ -2,6 +2,7 @@ package business
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/pdridh/service-needs-app/backend/api"
@@ -25,9 +26,10 @@ func (h *Handler) GetBusinesses() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		queries := r.URL.Query()
+		log.Println(queries)
 
 		// Filter stuff
-		validFilterKeys := []string{"location", "category"}
+		validFilterKeys := []string{"category"}
 		filters := api.GetFiltersFromQuery(queries, validFilterKeys)
 
 		findOptions := options.Find()
@@ -50,6 +52,7 @@ func (h *Handler) GetBusinesses() http.HandlerFunc {
 		// Finally after applying all the filters and options query the store
 		ps, err := h.Service.GetBusinesses(filters, findOptions)
 		if err != nil {
+			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}

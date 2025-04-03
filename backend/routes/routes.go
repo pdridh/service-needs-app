@@ -16,7 +16,9 @@ func AddRoutes(
 	authHandler *auth.Handler,
 	businessHandler *business.Handler,
 ) {
-	mux.Handle("POST /auth/register", authHandler.Register())
+	mux.Handle("POST /auth/register/businesses", authHandler.RegisterBusiness())
+	mux.Handle("POST /auth/register/consumers", authHandler.RegisterConsumer())
+
 	mux.Handle("POST /auth/login", authHandler.Login())
 
 	mux.Handle("GET /api/v1/businesses", auth.Middleware(businessHandler.GetBusinesses(), ""))

@@ -63,16 +63,3 @@ func GetFiltersFromQuery(queries url.Values, validKeys []string) bson.M {
 
 	return filters
 }
-
-type BusinessPayload struct {
-	Name        string `json:"name" validate:"required,min=3,max=30"`
-	Category    string `json:"category" validate:"required"`
-	Location    string `json:"location" validate:"required"`
-	Description string `json:"description"`
-}
-
-type ConsumerPayload struct {
-	FirstName string `json:"firstName" validate:"required,min=3,max=20"`
-	LastName  string `json:"lastName" validate:"required,min=2,max=20"`
-	About     string `json:"about"`
-}
