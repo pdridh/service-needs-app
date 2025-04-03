@@ -1,7 +1,6 @@
 package business
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -83,8 +82,8 @@ func (h *Handler) GetBusinesses() http.HandlerFunc {
 func (h *Handler) AddReview() http.HandlerFunc {
 
 	type ReviewPayload struct {
-		Rating  json.Number `json:"rating" validate:"required,min=0,max=5,numeric"`
-		Comment string      `json:"comment" validate:"required,min=3,max=100"`
+		Rating  float32 `json:"rating" validate:"required,min=0,max=5"`
+		Comment string  `json:"comment" validate:"required,min=3,max=100"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -94,12 +93,6 @@ func (h *Handler) AddReview() http.HandlerFunc {
 		var p ReviewPayload
 
 		if err := api.ParseJSON(r, &p); err != nil {
-			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
-			return
-		}
-
-		ratingf64, err := p.Rating.Float64()
-		if err != nil {
 			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
 			return
 		}
@@ -147,7 +140,7 @@ func (h *Handler) AddReview() http.HandlerFunc {
 		review := &review.Review{
 			BusinessID: bid,
 			ConsumerID: cid,
-			Rating:     float32(ratingf64),
+			Rating:     p.Rating,
 			Comment:    p.Comment,
 		}
 

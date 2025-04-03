@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -23,13 +22,13 @@ func NewHandler(service *service) *Handler {
 func (h *Handler) RegisterBusiness() http.HandlerFunc {
 
 	type RequestPayload struct {
-		Email       string      `json:"email" validate:"required,email"`
-		Password    string      `json:"password" validate:"required,min=8,max=70"`
-		Name        string      `json:"name" validate:"required,min=3,max=30"`
-		Category    string      `json:"category" validate:"required"`
-		Longitude   json.Number `json:"longitude" validate:"required,min=-180,max=180"`
-		Latitude    json.Number `json:"latitude" validate:"required,min=-90,max=90"`
-		Description string      `json:"description"`
+		Email       string  `json:"email" validate:"required,email"`
+		Password    string  `json:"password" validate:"required,min=8,max=70"`
+		Name        string  `json:"name" validate:"required,min=3,max=30"`
+		Category    string  `json:"category" validate:"required"`
+		Longitude   float64 `json:"longitude" validate:"required,min=-180,max=180"`
+		Latitude    float64 `json:"latitude" validate:"required,min=-90,max=90"`
+		Description string  `json:"description"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -49,19 +48,6 @@ func (h *Handler) RegisterBusiness() http.HandlerFunc {
 			}
 		}
 
-		// Parse longitude and latitude
-		longitudef64, err := p.Longitude.Float64()
-		if err != nil {
-			api.WriteInternalError(w, r)
-			return
-		}
-
-		latitudef64, err := p.Latitude.Float64()
-		if err != nil {
-			api.WriteInternalError(w, r)
-			return
-		}
-
 		available, err := h.Service.IsEmailAvailable(p.Email)
 		if err != nil {
 			api.WriteInternalError(w, r)
@@ -78,7 +64,7 @@ func (h *Handler) RegisterBusiness() http.HandlerFunc {
 			return
 		}
 
-		b, err := h.Service.RegisterBusiness(p.Email, p.Password, p.Name, p.Category, longitudef64, latitudef64, p.Description)
+		b, err := h.Service.RegisterBusiness(p.Email, p.Password, p.Name, p.Category, p.Longitude, p.Latitude, p.Description)
 		if err != nil {
 			api.WriteInternalError(w, r)
 			return
