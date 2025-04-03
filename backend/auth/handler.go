@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -18,21 +20,24 @@ func NewHandler(service *service) *Handler {
 	}
 }
 
-func (h *Handler) Register() http.HandlerFunc {
+func (h *Handler) RegisterBusiness() http.HandlerFunc {
 
-	type RegisterPayload struct {
-		Email        string               `json:"email" validate:"required,email"`
-		Password     string               `json:"password" validate:"required,min=8,max=70"`
-		Type         string               `json:"type" validate:"required,oneof=business consumer"`
-		BusinessInfo *api.BusinessPayload `json:"businessInfo,omitempty"`
-		ConsumerInfo *api.ConsumerPayload `json:"consumerInfo,omitempty"`
+	type RequestPayload struct {
+		Email       string      `json:"email" validate:"required,email"`
+		Password    string      `json:"password" validate:"required,min=8,max=70"`
+		Name        string      `json:"name" validate:"required,min=3,max=30"`
+		Category    string      `json:"category" validate:"required"`
+		Longitude   json.Number `json:"longitude" validate:"required,min=-180,max=180"`
+		Latitude    json.Number `json:"latitude" validate:"required,min=-90,max=90"`
+		Description string      `json:"description"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Read body into the payload
-		var p RegisterPayload
+		var p RequestPayload
 
 		if err := api.ParseJSON(r, &p); err != nil {
+			log.Println(err)
 			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
 			return
 		}
@@ -44,7 +49,19 @@ func (h *Handler) Register() http.HandlerFunc {
 			}
 		}
 
-		// TODO move this inside and in the registration itself and return err for conflict thats handled with a switch
+		// Parse longitude and latitude
+		longitudef64, err := p.Longitude.Float64()
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		latitudef64, err := p.Latitude.Float64()
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
 		available, err := h.Service.IsEmailAvailable(p.Email)
 		if err != nil {
 			api.WriteInternalError(w, r)
@@ -61,14 +78,67 @@ func (h *Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		res, err := h.Service.RegisterUser(p.Email, p.Password, p.Type, p.BusinessInfo, p.ConsumerInfo)
+		b, err := h.Service.RegisterBusiness(p.Email, p.Password, p.Name, p.Category, longitudef64, latitudef64, p.Description)
 		if err != nil {
 			api.WriteInternalError(w, r)
 			return
 		}
 
 		// Passed everything and therefore let the frontend know it was a success
-		api.WriteJSON(w, r, http.StatusCreated, res)
+		api.WriteJSON(w, r, http.StatusCreated, b)
+	}
+}
+
+// TODO make this less redudant? idk.. chose simplicity and redudancy over complexity and no redudancy; but theres probably a better solution here
+func (h *Handler) RegisterConsumer() http.HandlerFunc {
+
+	type RequestPayload struct {
+		Email     string `json:"email" validate:"required,email"`
+		Password  string `json:"password" validate:"required,min=8,max=70"`
+		FirstName string `json:"firstName" validate:"required,min=3,max=20"`
+		LastName  string `json:"lastName" validate:"required,min=2,max=20"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Read body into the payload
+		var p RequestPayload
+
+		if err := api.ParseJSON(r, &p); err != nil {
+			log.Println(err)
+			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
+			return
+		}
+
+		var allErrs []error
+		if err := h.Service.validate.Struct(p); err != nil {
+			for _, e := range err.(validator.ValidationErrors) {
+				allErrs = append(allErrs, api.NewFieldError(e.Field(), e.Tag(), e.Value()))
+			}
+		}
+		available, err := h.Service.IsEmailAvailable(p.Email)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		if !available {
+			allErrs = append(allErrs, api.NewFieldError("Email", "conflict", p.Email))
+		}
+
+		if len(allErrs) > 0 {
+			// Handle all errors
+			api.WriteError(w, r, http.StatusBadRequest, "Invalid form body", allErrs)
+			return
+		}
+
+		c, err := h.Service.RegisterConsumer(p.Email, p.Password, p.FirstName, p.LastName)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
+		}
+
+		// Passed everything and therefore let the frontend know it was a success
+		api.WriteJSON(w, r, http.StatusCreated, c)
 	}
 }
 

@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/business"
+	"github.com/pdridh/service-needs-app/backend/common"
 	"github.com/pdridh/service-needs-app/backend/config"
 	"github.com/pdridh/service-needs-app/backend/consumer"
 	"github.com/pdridh/service-needs-app/backend/user"
@@ -32,9 +32,7 @@ func NewService(client *mongo.Client, userStore user.Store, businessStore busine
 	}
 }
 
-// Given the detials for the user account and the details for either consumer type or business type user
-// This functions starts a transaction and updates either the consumerstore & userStore OR businessStore & userStore
-func (s *service) RegisterUser(email string, password string, userType string, businessInfo *api.BusinessPayload, consumerInfo *api.ConsumerPayload) (any, error) {
+func (s *service) RegisterBusiness(email string, password string, name string, category string, longitude float64, latitude float64, description string) (*business.Business, error) {
 	// Start session for transaction
 	session, err := s.client.StartSession()
 	if err != nil {
@@ -43,8 +41,7 @@ func (s *service) RegisterUser(email string, password string, userType string, b
 	// End session after this closes
 	defer session.EndSession(context.Background())
 
-	var result any
-
+	var b *business.Business
 	err = mongo.WithSession(context.Background(), session, func(sc mongo.SessionContext) error {
 		// Start the transaction
 		if err := session.StartTransaction(); err != nil {
@@ -63,7 +60,7 @@ func (s *service) RegisterUser(email string, password string, userType string, b
 		u := &user.User{
 			Email:    email,
 			Password: hashedPassword,
-			Type:     userType,
+			Type:     user.UserTypeBusiness,
 		}
 
 		if err := s.userStore.CreateUser(sc, u); err != nil {
@@ -74,36 +71,20 @@ func (s *service) RegisterUser(email string, password string, userType string, b
 		// Get user ID
 		uid := u.ID
 
-		// Create the associated entity (Business or Consumer)
-		switch userType {
-		case user.UserTypeBusiness:
-			b := &business.Business{
-				ID:          uid,
-				Name:        businessInfo.Name,
-				Category:    businessInfo.Category,
-				Location:    businessInfo.Location,
-				Description: businessInfo.Description,
-				Verified:    false,
-			}
-			if err := s.businessStore.CreateBusiness(sc, b); err != nil {
-				session.AbortTransaction(sc)
-				return err
-			}
-			result = b
-		case user.UserTypeConsumer:
-			c := &consumer.Consumer{
-				ID:        uid,
-				FirstName: consumerInfo.FirstName,
-				LastName:  consumerInfo.LastName,
-				Verified:  false,
-			}
-			if err := s.consumerStore.CreateConsumer(sc, c); err != nil {
-				session.AbortTransaction(sc)
-				return err
-			}
-			result = c
-		default:
-			return ErrUnknownUserType
+		b = &business.Business{
+			ID:       uid,
+			Name:     name,
+			Category: category,
+			Location: common.GeoJSONPoint{
+				Type:        "Point",
+				Coordinates: []float64{longitude, latitude},
+			},
+			Description: description,
+			Verified:    false,
+		}
+		if err := s.businessStore.CreateBusiness(sc, b); err != nil {
+			session.AbortTransaction(sc)
+			return err
 		}
 
 		// Commit the transaction
@@ -119,7 +100,77 @@ func (s *service) RegisterUser(email string, password string, userType string, b
 		return nil, err
 	}
 
-	return result, nil
+	return b, err
+}
+
+// Given the detials for the user account and the details for consumer.
+// This functions starts a transaction and updates the consumerstore & userStore together, meaning if one fails the other also fails
+// And the records are consistent.
+func (s *service) RegisterConsumer(email string, password string, firstName string, lastName string) (*consumer.Consumer, error) {
+	// Start session for transaction
+	session, err := s.client.StartSession()
+	if err != nil {
+		return nil, err
+	}
+
+	// End session after this closes
+	defer session.EndSession(context.Background())
+
+	var c *consumer.Consumer
+	err = mongo.WithSession(context.Background(), session, func(sc mongo.SessionContext) error {
+		// Start the transaction
+		if err := session.StartTransaction(); err != nil {
+			return err
+		}
+
+		// Register the user
+		// Hash the password before storing
+		hashedPassword, err := HashPassword(password)
+		if err != nil {
+			session.AbortTransaction(sc)
+			return err
+		}
+
+		// Actual registration process
+		u := &user.User{
+			Email:    email,
+			Password: hashedPassword,
+			Type:     user.UserTypeConsumer,
+		}
+
+		if err := s.userStore.CreateUser(sc, u); err != nil {
+			session.AbortTransaction(sc)
+			return err
+		}
+
+		// Get user ID
+		uid := u.ID
+
+		c = &consumer.Consumer{
+			ID:        uid,
+			FirstName: firstName,
+			LastName:  lastName,
+			Verified:  false,
+		}
+
+		if err := s.consumerStore.CreateConsumer(sc, c); err != nil {
+			session.AbortTransaction(sc)
+			return err
+		}
+		// Commit the transaction
+		if err := session.CommitTransaction(sc); err != nil {
+			session.AbortTransaction(sc)
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // Given a user email and password it checks stuff in the store and returns a jwt token (string) if everything went well.
