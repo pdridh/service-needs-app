@@ -17,6 +17,7 @@ import (
 	"github.com/pdridh/service-needs-app/backend/review"
 	"github.com/pdridh/service-needs-app/backend/server"
 	"github.com/pdridh/service-needs-app/backend/user"
+	"github.com/pdridh/service-needs-app/backend/ws"
 )
 
 func main() {
@@ -26,6 +27,9 @@ func main() {
 	db.ConnectToDB()
 	defer db.DisconnectFromDB()
 
+	hub := ws.NewHub()
+	go hub.Run()
+
 	validate := validator.New()
 
 	// TODO this feels redundant and shitty change this idk
@@ -33,13 +37,16 @@ func main() {
 	businessStore := business.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().BusinessCollectionName))
 	consumerStore := consumer.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ConsumerCollectionName))
 	reviewStore := review.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ReviewCollectionName))
+
+	wsHandler := ws.NewHandler(hub)
+
 	businessService := business.NewService(businessStore, reviewStore, validate)
 	businessHandler := business.NewHandler(businessService)
 
 	authService := auth.NewService(db.GetClient(), userStore, businessStore, consumerStore, validate)
 	authHandler := auth.NewHandler(authService)
 
-	srv := server.New(authHandler, businessHandler)
+	srv := server.New(authHandler, businessHandler, wsHandler)
 
 	httpServer := &http.Server{
 		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),
