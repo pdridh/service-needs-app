@@ -1,11 +1,7 @@
 package business
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/review"
@@ -25,66 +21,27 @@ func NewHandler(service *Service) *Handler {
 }
 
 func (h *Handler) GetBusinesses() http.HandlerFunc {
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		queries := r.URL.Query()
 
-		// Filter stuff
-		validFilterKeys := []string{"category"}
-		filters := api.GetFiltersFromQuery(queries, validFilterKeys)
+		var params QueryOptions
+		api.ParseQueryParams(r.URL.Query(), &params)
 
-		findOptions := options.Find()
-
-		// Sorting stuff
-		if sortBy, sortOrder := queries.Get("sortBy"), queries.Get("sortOrder"); sortBy != "" && sortOrder != "" {
-			order := 1
-			if sortOrder == "desc" {
-				order = -1
-			}
-			findOptions.SetSort(bson.D{{Key: sortBy, Value: order}})
-		}
-
-		// Pagination stuff
-		page := api.GetIntParamFromQuery(queries, "page", 1, 1, 100)
-		limit := api.GetIntParamFromQuery(queries, "limit", 10, 1, 50)
-		skip := (page - 1) * limit
-		findOptions.SetLimit(int64(limit)).SetSkip(int64(skip))
-
-		// Geolocation query
-		if locStr := queries.Get("location"); locStr != "" {
-			parts := strings.Split(locStr, ",")
-			if len(parts) == 2 {
-				lon, err1 := strconv.ParseFloat(parts[0], 64)
-				lat, err2 := strconv.ParseFloat(parts[1], 64)
-				if err1 == nil && err2 == nil {
-					// Meters
-					maxDistance := api.GetIntParamFromQuery(queries, "maxDistance", 5000, 100, 50000)
-					filters["location"] = bson.M{
-						"$near": bson.M{
-							"$geometry":    bson.M{"type": "Point", "coordinates": []float64{lon, lat}},
-							"$maxDistance": maxDistance,
-						},
-					}
-				}
-			}
-		}
-
-		// Finally after applying all the filters and options query the store
-		ps, err := h.Service.GetBusinesses(filters, findOptions)
+		b, _, err := h.Service.GetBusinesses(r.Context(), params)
 		if err != nil {
-			log.Println(err)
 			api.WriteInternalError(w, r)
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, ps)
+		api.WriteJSON(w, r, http.StatusOK, b)
 	}
 }
 
 func (h *Handler) AddReview() http.HandlerFunc {
 
 	type ReviewPayload struct {
-		Rating  json.Number `json:"rating" validate:"required,min=0,max=5,numeric"`
-		Comment string      `json:"comment" validate:"required,min=3,max=100"`
+		Rating  float32 `json:"rating" validate:"required,min=0,max=5"`
+		Comment string  `json:"comment" validate:"required,min=3,max=100"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -94,12 +51,6 @@ func (h *Handler) AddReview() http.HandlerFunc {
 		var p ReviewPayload
 
 		if err := api.ParseJSON(r, &p); err != nil {
-			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
-			return
-		}
-
-		ratingf64, err := p.Rating.Float64()
-		if err != nil {
 			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
 			return
 		}
@@ -147,7 +98,7 @@ func (h *Handler) AddReview() http.HandlerFunc {
 		review := &review.Review{
 			BusinessID: bid,
 			ConsumerID: cid,
-			Rating:     float32(ratingf64),
+			Rating:     p.Rating,
 			Comment:    p.Comment,
 		}
 

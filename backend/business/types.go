@@ -15,5 +15,21 @@ type Business struct {
 	Verified    bool                `json:"verified" bson:"verified"`
 	CreatedAt   primitive.DateTime  `json:"createdAt" bson:"created_at"`
 	UpdatedAt   primitive.DateTime  `json:"updatedAt" bson:"updated_at"`
+	Distance    *float64            `json:"distance,omitempty" bson:"distance,omitempty"`
+	AvgRating   *float64            `json:"averageRating,omitempty" bson:"average_rating,omitempty"`
+	ReviewCount int                 `json:"reviewCount" bson:"review_count"`
 	// TODO add other information like available time, documents, profile stuff etc,etc...
+}
+
+// QueryOptions represents all possible query parameters for business listing
+type QueryOptions struct {
+	Page      int64          `json:"page"`
+	PageSize  int64          `json:"pageSize"`
+	SortBy    string         `json:"sortBy"`
+	SortOrder string         `json:"sortOrder"` // asc or desc
+	Search    string         `json:"search"`
+	Filters   map[string]any `json:"filters"`
+	Longitude float64        `json:"longitude"`
+	Latitude  float64        `json:"latitude"`
+	MaxDist   float64        `json:"maxDist"` // in meters
 }

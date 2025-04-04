@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,6 +26,42 @@ func ParseJSON(r *http.Request, v any) error {
 	}
 
 	return nil
+}
+
+// Given the query params in the url (for GETs) and a struct that has strongly typed fields.
+// Extracts the field from the query param if it exists and parses it into the type of the field it is.
+func ParseQueryParams(q url.Values, params any) {
+	v := reflect.ValueOf(params).Elem()
+
+	for i := range v.NumField() {
+		field := v.Field(i)
+		fieldType := v.Type().Field(i)
+		paramValue := q.Get(fieldType.Tag.Get("json")) // Get from query
+
+		if paramValue == "" {
+			continue
+		}
+
+		switch field.Kind() {
+		case reflect.Int64, reflect.Int32, reflect.Int:
+			val, err := strconv.Atoi(paramValue)
+			if err == nil {
+				field.SetInt(int64(val))
+			}
+		case reflect.Float64:
+			val, err := strconv.ParseFloat(paramValue, 64)
+			if err == nil {
+				field.SetFloat(val)
+			}
+		case reflect.Bool:
+			val, err := strconv.ParseBool(paramValue)
+			if err == nil {
+				field.SetBool(val)
+			}
+		default:
+			field.SetString(paramValue)
+		}
+	}
 }
 
 // Helper function to get a int param from query params.
