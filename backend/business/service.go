@@ -1,6 +1,8 @@
 package business
 
 import (
+	"context"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/service-needs-app/backend/review"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,8 +23,8 @@ func NewService(bstore Store, rstore review.Store, validate *validator.Validate)
 	}
 }
 
-func (s *Service) GetBusinesses(filters bson.M, options *options.FindOptions) ([]Business, error) {
-	return s.businessStore.GetBusinesses(filters, options)
+func (s *Service) GetBusinesses(ctx context.Context, options QueryOptions) ([]Business, int64, error) {
+	return s.businessStore.GetBusinesses(ctx, options)
 }
 
 func (s *Service) IsValidID(id string) (bool, error) {
