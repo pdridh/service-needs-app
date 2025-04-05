@@ -2,7 +2,8 @@ package ws
 
 import (
 	"log"
-	"sync"
+
+	"github.com/coder/websocket"
 )
 
 // Hub maintains active clients and broadcasts messages
@@ -10,7 +11,6 @@ type Hub struct {
 	clients    map[string]*Client
 	register   chan *Client
 	unregister chan *Client
-	mu         sync.Mutex
 }
 
 // NewHub creates a new hub instance
@@ -27,18 +27,14 @@ func (h *Hub) Run() {
 		select {
 		// Handle register channel
 		case client := <-h.register:
-			h.mu.Lock()
 			h.clients[client.ID] = client
-			h.mu.Unlock()
-			log.Println("Client registered", client.ID)
 		// Handle unregister channel
 		case client := <-h.unregister:
-			h.mu.Lock()
-			if _, ok := h.clients[client.ID]; ok {
+			if c, ok := h.clients[client.ID]; ok {
+				c.Conn.Close(websocket.StatusNormalClosure, "byebye")
 				delete(h.clients, client.ID)
 				log.Printf("Client unregistered: %s", client.ID)
 			}
-			h.mu.Unlock()
 			// TODO add message stuff
 		}
 	}
