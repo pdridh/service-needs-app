@@ -4,11 +4,12 @@ import (
 	"github.com/coder/websocket"
 )
 
-// Hub maintains active clients and routes messages
+// Hub maintains active clients and handles events
 type Hub struct {
 	clients    map[string]*Client
 	register   chan *Client
 	unregister chan *Client
+	events     chan []byte // TODO replace this with actual events
 }
 
 // NewHub creates a new hub instance
@@ -17,6 +18,7 @@ func NewHub() *Hub {
 		clients:    make(map[string]*Client),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
+		events:     make(chan []byte),
 	}
 }
 
@@ -31,7 +33,7 @@ func (h *Hub) RegisterClient(c *Client) {
 
 // Removes the given client c from the clients map if it exists.
 // If it doesnt, it like a nop idk
-func (h *Hub) RemoveClient(c *Client) {
+func (h *Hub) UnregisterClient(c *Client) {
 	if _, ok := h.clients[c.ID]; ok {
 		c.Conn.Close(websocket.StatusNormalClosure, "byebye")
 		delete(h.clients, c.ID)
@@ -49,8 +51,12 @@ func (h *Hub) Run() {
 			h.RegisterClient(client)
 		// Handle unregister channel
 		case client := <-h.unregister:
-			h.RemoveClient(client)
-			// TODO add message stuff
+			h.UnregisterClient(client)
+		case e := <-h.events:
+			// FOR NOW ONLY BROADCASTS THE MESSAGE TO ALL (EVEN ECHO)
+			for _, c := range h.clients {
+				c.Send <- e
+			}
 		}
 	}
 }

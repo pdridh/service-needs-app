@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/coder/websocket"
@@ -26,13 +27,13 @@ func (h *Handler) Accept() http.HandlerFunc {
 		u := api.CurrentUserID(r)
 
 		// Create a new client
-		client := &Client{
-			ID:   u,
-			Conn: conn,
-			Hub:  h.hub,
-		}
-
+		client := NewClient(conn, u, h.hub)
 		h.hub.register <- client
 
+		ctx, cancel := context.WithCancel(context.Background())
+
+		// Start client pumps for reading and writing
+		go client.WritePump(ctx, cancel)
+		go client.ReadPump(ctx, cancel)
 	}
 }
