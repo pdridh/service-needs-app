@@ -2,6 +2,7 @@ package ws
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/coder/websocket"
@@ -36,4 +37,9 @@ func (h *Handler) Accept() http.HandlerFunc {
 		go client.WritePump(ctx, cancel)
 		go client.ReadPump(ctx, cancel)
 	}
+}
+
+// Sends hello back to the client with its id (tester function probably temproray)
+func HandleHelloEvent(e EventContext) {
+	e.Client.Send <- Event{Code: EventHello, Payload: EventHelloPayload{Message: fmt.Sprintf("Hello %s", e.Client.ID)}}
 }

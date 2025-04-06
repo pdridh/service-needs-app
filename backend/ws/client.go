@@ -2,8 +2,10 @@ package ws
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/coder/websocket"
 )
@@ -19,7 +21,7 @@ type Client struct {
 	Conn *websocket.Conn
 	ID   string
 	Hub  *Hub
-	Send chan []byte
+	Send chan Event
 }
 
 func NewClient(conn *websocket.Conn, id string, hub *Hub) *Client {
@@ -27,7 +29,7 @@ func NewClient(conn *websocket.Conn, id string, hub *Hub) *Client {
 		Conn: conn,
 		ID:   id,
 		Hub:  hub,
-		Send: make(chan []byte, clientSendBuffer),
+		Send: make(chan Event, clientSendBuffer),
 	}
 }
 
@@ -61,7 +63,24 @@ func (c *Client) ReadPump(ctx context.Context, cancel context.CancelFunc) {
 
 		// TODO handle other messagetypes for now only text
 		if messageType == websocket.MessageText {
-			c.Hub.events <- p
+
+			// json.Decode
+			var e Event
+
+			if err := json.Unmarshal(p, &e); err != nil {
+				// If it doesnt follow the protocol just drop it for now
+				// TODO maybe track how many times the client didnt follow protocol
+				continue
+			}
+
+			// If it does follow the protocol
+			eventContext := EventContext{
+				Event:     e,
+				Client:    c,
+				Timestamp: time.Now(),
+			}
+
+			c.Hub.eventRouter <- eventContext
 		}
 	}
 }
@@ -81,7 +100,14 @@ func (c *Client) WritePump(ctx context.Context, cancel context.CancelFunc) {
 			if !ok {
 				return
 			}
-			if err := c.Conn.Write(ctx, websocket.MessageText, msg); err != nil {
+
+			raw, err := json.Marshal(msg)
+			if err != nil {
+				// TODO THis is the apis problem and client should be notified probably so handle this error
+				return // FOR NOW CLOSE THE PUMP AND THE CONN
+			}
+
+			if err := c.Conn.Write(ctx, websocket.MessageText, raw); err != nil {
 				return
 			}
 		case <-ctx.Done():

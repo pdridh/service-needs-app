@@ -6,24 +6,47 @@ import (
 
 // Hub maintains active clients and handles events
 type Hub struct {
-	clients    map[string]*Client
-	register   chan *Client
-	unregister chan *Client
-	events     chan []byte // TODO replace this with actual events
+	clients       map[string]*Client
+	register      chan *Client
+	unregister    chan *Client
+	eventRouter   chan EventContext
+	eventHandlers map[string]EventHandler
 }
 
-// NewHub creates a new hub instance
+// Given the event context handles the event.
+type EventHandler func(e EventContext)
+
+// NewHub creates a new hub instance.
 func NewHub() *Hub {
-	return &Hub{
-		clients:    make(map[string]*Client),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		events:     make(chan []byte),
+	h := &Hub{
+		clients:       make(map[string]*Client),
+		register:      make(chan *Client),
+		unregister:    make(chan *Client),
+		eventRouter:   make(chan EventContext),
+		eventHandlers: make(map[string]EventHandler),
+	}
+
+	// Assign handlers here
+	h.On(EventHello, HandleHelloEvent)
+
+	return h
+}
+
+// Simple wrapper function that assigns the given event string to be handled by the given EventHandler.
+// Overwrites the previous handler if it has already been assigned.
+func (h *Hub) On(e string, f EventHandler) {
+	h.eventHandlers[e] = f
+}
+
+// Given the event context, checks the eventHandlers map and finds the assigned event to the give event code.
+// If found it executes the handler otherwise its a nop.
+func (h *Hub) RouteEvent(e EventContext) {
+	if handler, ok := h.eventHandlers[e.Event.Code]; ok {
+		handler(e)
 	}
 }
 
 // The only reason these functions dont require locks or anything is because the hub itself is using channles
-
 // Simple helper to add a client to the client map.
 // Handles the case when the same client joins from multiple devices (TODO)
 func (h *Hub) RegisterClient(c *Client) {
@@ -52,11 +75,8 @@ func (h *Hub) Run() {
 		// Handle unregister channel
 		case client := <-h.unregister:
 			h.UnregisterClient(client)
-		case e := <-h.events:
-			// FOR NOW ONLY BROADCASTS THE MESSAGE TO ALL (EVEN ECHO)
-			for _, c := range h.clients {
-				c.Send <- e
-			}
+		case e := <-h.eventRouter:
+			h.RouteEvent(e)
 		}
 	}
 }
