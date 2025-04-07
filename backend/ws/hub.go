@@ -1,6 +1,9 @@
 package ws
 
 import (
+	"context"
+	"time"
+
 	"github.com/coder/websocket"
 	"github.com/pdridh/service-needs-app/backend/business"
 	"github.com/pdridh/service-needs-app/backend/chat"
@@ -60,6 +63,29 @@ func (h *Hub) RouteEvent(e EventContext) {
 func (h *Hub) RegisterClient(c *Client) {
 	// TODO handle the case where client is already connected (for example two tabs opened idkididkdidkdidkd)
 	h.clients[c.ID] = c
+
+	ctx := context.Background()
+	recvdMsgs, err := h.chatStore.GetMessagesForWithStatus(ctx, c.ID, chat.StatusMessageSent)
+	if err != nil {
+		h.unregister <- c
+		return
+	}
+
+	err = h.chatStore.DeliverMessagesBeforeFor(ctx, time.Now().UTC(), c.ID)
+	if err != nil {
+		h.unregister <- c
+		return
+	}
+
+	for _, m := range recvdMsgs {
+		m.Status = chat.StatusMessageDelivered
+		c.Send <- Event{Code: EventChat, Payload: m}
+
+		// Inform the other clients that their message has been delivered
+		if other, ok := h.clients[m.ID.Hex()]; ok {
+			other.Send <- Event{Code: EventChat, Payload: m}
+		}
+	}
 }
 
 // Removes the given client c from the clients map if it exists.

@@ -14,8 +14,10 @@ type Store interface {
 	CreateChatMessage(ctx context.Context, c *ChatMessage) error
 	GetMessageByID(ctx context.Context, id string) (*ChatMessage, error)
 	GetMessagesForChat(ctx context.Context, sender string, receiver string) ([]ChatMessage, error)
+	GetMessagesForWithStatus(ctx context.Context, userID string, status MessageStatus) ([]ChatMessage, error)
 	HasMessagedBefore(ctx context.Context, sender string, receiver string) (bool, error)
 	UpdateMessageStatus(ctx context.Context, id string, status MessageStatus) error
+	DeliverMessagesBeforeFor(ctx context.Context, t time.Time, userID string) error
 }
 
 type mongoStore struct {
@@ -82,6 +84,30 @@ func (s *mongoStore) GetMessagesForChat(ctx context.Context, sender string, rece
 	return chats, nil
 }
 
+func (s *mongoStore) GetMessagesForWithStatus(ctx context.Context, userID string, status MessageStatus) ([]ChatMessage, error) {
+	filter := bson.M{
+		"receiver": userID,
+		"status":   status,
+	}
+
+	cursor, err := s.coll.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var chats []ChatMessage
+	if err = cursor.All(ctx, &chats); err != nil {
+		return nil, err
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return chats, nil
+}
+
 func (s *mongoStore) GetMessageByID(ctx context.Context, id string) (*ChatMessage, error) {
 
 	idPrim, err := primitive.ObjectIDFromHex(id)
@@ -122,6 +148,26 @@ func (s *mongoStore) UpdateMessageStatus(ctx context.Context, id string, status 
 	}
 
 	_, err = s.coll.UpdateByID(ctx, idPrim, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *mongoStore) DeliverMessagesBeforeFor(ctx context.Context, t time.Time, userID string) error {
+
+	filter := bson.M{
+		"receiver":   userID,
+		"status":     StatusMessageSent,
+		"created_at": bson.M{"$lte": primitive.NewDateTimeFromTime(t)},
+	}
+
+	update := bson.M{
+		"$set": bson.M{"status": StatusMessageDelivered},
+	}
+
+	_, err := s.coll.UpdateMany(ctx, filter, update)
 	if err != nil {
 		return err
 	}
