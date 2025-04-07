@@ -8,10 +8,11 @@ import (
 
 type ChatMessage struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id"`
-	Sender    string             `json:"firstName" bson:"first_name"`
-	Receiver  string             `json:"lastName" bson:"last_name"`
+	Sender    string             `json:"sender" bson:"sender"`
+	Receiver  string             `json:"receiver" bson:"receiver"`
 	Message   string             `json:"message" bson:"message"` // TODO replace this with something more dynamic (attachments, etc..,etc..)
-	Timestamp primitive.DateTime `json:"timestamp" bson:"timestamp"`
+	Status    MessageStatus      `json:"status" bson:"status"`
+	CreatedAt primitive.DateTime `json:"createdAt" bson:"created_at"`
 }
 
 func NewChatMessage(sender string, receiver string, message string, timestamp time.Time) *ChatMessage {
