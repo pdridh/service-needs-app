@@ -6,11 +6,12 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pdridh/service-needs-app/backend/config"
+	"github.com/pdridh/service-needs-app/backend/user"
 )
 
 // Generate a jwt with id and userType as the user's claims
 // Returns the token as a string.
-func GenerateJWT(id string, userType string, duration time.Duration) (string, error) {
+func GenerateJWT(id string, userType user.UserType, duration time.Duration) (string, error) {
 	claims := UserClaims{
 		UserID:   id,
 		UserType: userType,

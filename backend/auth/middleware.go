@@ -5,12 +5,13 @@ import (
 	"net/http"
 
 	"github.com/pdridh/service-needs-app/backend/api"
+	"github.com/pdridh/service-needs-app/backend/user"
 )
 
 // Takes a handler function and only calls it if
 // the jwt token it extracts from the request's is valid.
 // The next handler function is called with the userid in context
-func Middleware(next http.HandlerFunc, allow string) http.HandlerFunc {
+func Middleware(next http.HandlerFunc, allow user.UserType) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jCookie, err := r.Cookie("jwt")
 		if err != nil {
