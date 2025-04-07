@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/pdridh/service-needs-app/backend/user"
 )
 
 // Constants
@@ -20,14 +21,16 @@ const (
 type Client struct {
 	Conn *websocket.Conn
 	ID   string
+	Type user.UserType
 	Hub  *Hub
 	Send chan Event
 }
 
-func NewClient(conn *websocket.Conn, id string, hub *Hub) *Client {
+func NewClient(conn *websocket.Conn, id string, userType user.UserType, hub *Hub) *Client {
 	return &Client{
 		Conn: conn,
 		ID:   id,
+		Type: userType,
 		Hub:  hub,
 		Send: make(chan Event, clientSendBuffer),
 	}

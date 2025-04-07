@@ -31,9 +31,10 @@ func (h *Handler) Accept() http.HandlerFunc {
 		}
 
 		u := api.CurrentUserID(r)
+		t := api.CurrentUserType(r)
 
 		// Create a new client
-		client := NewClient(conn, u, h.hub)
+		client := NewClient(conn, u, t, h.hub)
 		h.hub.register <- client
 
 		ctx, cancel := context.WithCancel(context.Background())
