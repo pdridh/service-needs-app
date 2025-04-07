@@ -12,6 +12,7 @@ import (
 type Store interface {
 	CreateChatMessage(ctx context.Context, c *ChatMessage) error
 	GetMessagesForChat(ctx context.Context, sender string, receiver string) ([]ChatMessage, error)
+	HasMessagedBefore(ctx context.Context, sender string, receiver string) (bool, error)
 	UpdateMessageStatus(ctx context.Context, id string, status MessageStatus) error
 }
 
@@ -30,6 +31,26 @@ func (s *mongoStore) CreateChatMessage(ctx context.Context, c *ChatMessage) erro
 
 	_, err := s.coll.InsertOne(ctx, c)
 	return err
+}
+
+func (s *mongoStore) HasMessagedBefore(ctx context.Context, sender string, receiver string) (bool, error) {
+	filter := bson.M{
+		"sender":   sender,
+		"receiver": receiver,
+	}
+
+	var c ChatMessage
+	err := s.coll.FindOne(ctx, filter).Decode(&c)
+
+	if err == mongo.ErrNoDocuments {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, err
 }
 
 func (s *mongoStore) GetMessagesForChat(ctx context.Context, sender string, receiver string) ([]ChatMessage, error) {

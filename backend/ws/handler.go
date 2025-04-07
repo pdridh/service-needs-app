@@ -3,12 +3,12 @@ package ws
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/coder/websocket"
 	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/chat"
+	"github.com/pdridh/service-needs-app/backend/user"
 )
 
 type Handler struct {
@@ -64,8 +64,30 @@ func (h *Hub) HandleChatEvent(e EventContext) {
 		return
 	}
 
-	// TODO verify if the receiver is real and allows the sender to send message to it.
-	// TODO something like: receiverStore.getReceiver(p.Receiver) -> check and then some kinda isAllowedTo(p.Sender, p.Receiver) or sum
+	// In case the sender tries to impersonate some another client
+	// * (PROBABLY SHOULD LOG IT IDK, SEC SHIT, FOR NOW WE JUST DROPPING THE EVENT)
+	if p.Sender != e.Client.ID {
+		return
+	}
+
+	// TODO maybe add a ban list (ts for later tho) :3
+	switch e.Client.Type {
+	case user.UserTypeBusiness:
+		// If ur a business u can only reply to clients (no solicitation)
+		// If the business is sending a message to an user that has already sent a message to it before
+		// Thefore the current receiver SHOULD be a sender before business can send a message.
+		if hasMsged, err := h.chatStore.HasMessagedBefore(context.Background(), p.Receiver, e.Client.ID); !hasMsged || err != nil {
+			return // No soliciting clients el o el
+		}
+		if c, err := h.consumerStore.GetConsumerByID(context.Background(), p.Receiver); c == nil || err != nil {
+			return // consumer doesnt exist
+		}
+	case user.UserTypeConsumer:
+		// Check if the business exists and IS a business
+		if b, err := h.businessStore.GetBusinessByID(p.Receiver); b == nil || err != nil {
+			return // business doesnt exist
+		}
+	}
 
 	// If it passed verification the message sending responsibility is now to the server.
 
@@ -81,7 +103,6 @@ func (h *Hub) HandleChatEvent(e EventContext) {
 		msg.Status = chat.StatusMessageDelivered
 		if err := h.chatStore.UpdateMessageStatus(context.Background(), msg.ID.Hex(), msg.Status); err != nil {
 			// TODO Again, inform sender that the server failed to deliver
-			log.Println(err)
 			return
 		}
 
