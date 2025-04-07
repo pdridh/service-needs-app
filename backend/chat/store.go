@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -11,6 +12,7 @@ import (
 type Store interface {
 	CreateChatMessage(ctx context.Context, c *ChatMessage) error
 	GetMessagesForChat(ctx context.Context, sender string, receiver string) ([]ChatMessage, error)
+	UpdateMessageStatus(ctx context.Context, id string, status MessageStatus) error
 }
 
 type mongoStore struct {
@@ -24,6 +26,7 @@ func NewMongoStore(coll *mongo.Collection) *mongoStore {
 
 func (s *mongoStore) CreateChatMessage(ctx context.Context, c *ChatMessage) error {
 	c.ID = primitive.NewObjectID()
+	c.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	_, err := s.coll.InsertOne(ctx, c)
 	return err
@@ -54,4 +57,25 @@ func (s *mongoStore) GetMessagesForChat(ctx context.Context, sender string, rece
 	}
 
 	return chats, nil
+}
+
+func (s *mongoStore) UpdateMessageStatus(ctx context.Context, id string, status MessageStatus) error {
+
+	idPrim, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"status": status,
+		},
+	}
+
+	_, err = s.coll.UpdateByID(ctx, idPrim, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

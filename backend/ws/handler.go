@@ -3,6 +3,7 @@ package ws
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/coder/websocket"
@@ -49,22 +50,50 @@ func HandleHelloEvent(e EventContext) {
 }
 
 func (h *Hub) HandleChatEvent(e EventContext) {
-	var p EventChatPayload
+	type RequestPayload struct {
+		Sender   string `json:"sender"`
+		Receiver string `json:"receiver"`
+		Message  string `json:"message"` // TODO probably handle attachments and shit (no idea how)
+	}
+
+	var p RequestPayload
 
 	err := e.Event.ParsePayloadInto(&p)
 	if err != nil {
 		return
 	}
+
 	// TODO verify if the receiver is real and allows the sender to send message to it.
 	// TODO something like: receiverStore.getReceiver(p.Receiver) -> check and then some kinda isAllowedTo(p.Sender, p.Receiver) or sum
 
-	p.Timestamp = e.Timestamp
-	p.Sender = e.Client.ID
+	// If it passed verification the message sending responsibility is now to the server.
 
-	if c, ok := h.clients[p.Receiver]; ok {
-		c.Send <- Event{Code: EventChat, Payload: p}
-
-		// Can store after sending to the conn cuz its more responsive
-		h.chatStore.CreateChatMessage(context.Background(), chat.NewChatMessage(p.Sender, p.Receiver, p.Message, p.Timestamp))
+	msg := chat.NewChatMessage(e.Client.ID, p.Receiver, p.Message, chat.StatusMessageSent)
+	if err := h.chatStore.CreateChatMessage(context.Background(), msg); err != nil {
+		// TODO inform user that its server's fault the message wasnt delivered
+		return
 	}
+
+	// If the receiver's connection is online we can send now
+	if c, ok := h.clients[p.Receiver]; ok {
+
+		msg.Status = chat.StatusMessageDelivered
+		if err := h.chatStore.UpdateMessageStatus(context.Background(), msg.ID.Hex(), msg.Status); err != nil {
+			// TODO Again, inform sender that the server failed to deliver
+			log.Println(err)
+			return
+		}
+
+		// Send the message to the receiver
+		c.Send <- Event{Code: EventChat, Payload: msg}
+	}
+
+	// Update the sender about the message
+	if c, ok := h.clients[e.Client.ID]; ok {
+		c.Send <- Event{Code: EventChat, Payload: msg}
+	}
+}
+
+func (h *Hub) HandleChatSeenEvent(e EventContext) {
+	// TODO implement chat seen
 }

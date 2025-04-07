@@ -8,8 +8,9 @@ import (
 type EventCode string
 
 const (
-	EventChat  EventCode = "chat"
-	EventHello EventCode = "hello"
+	EventChat     EventCode = "chat"
+	EventHello    EventCode = "hello"
+	EventChatSeen EventCode = "chatseen"
 )
 
 // Actual event that is sent and received by the client.
@@ -38,11 +39,4 @@ type EventContext struct {
 
 type EventHelloPayload struct {
 	Message string `json:"message"`
-}
-
-type EventChatPayload struct {
-	Sender    string    `json:"sender"`
-	Receiver  string    `json:"receiver"`
-	Message   string    `json:"message"` // TODO probably handle attachments and shit (no idea how)
-	Timestamp time.Time `json:"timestamp"`
 }

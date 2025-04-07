@@ -35,7 +35,7 @@ func main() {
 	businessStore := business.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().BusinessCollectionName))
 	consumerStore := consumer.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ConsumerCollectionName))
 	reviewStore := review.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ReviewCollectionName))
-	chatStore := chat.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, "chatMessage"))
+	chatStore := chat.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, "messages"))
 
 	hub := ws.NewHub(chatStore)
 	go hub.Run()

@@ -1,9 +1,15 @@
 package chat
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+type MessageStatus string
+
+const (
+	StatusMessageSent      MessageStatus = "sent"
+	StatusMessageDelivered MessageStatus = "delivered"
+	StatusMessageSeen      MessageStatus = "seen"
 )
 
 type ChatMessage struct {
@@ -15,11 +21,11 @@ type ChatMessage struct {
 	CreatedAt primitive.DateTime `json:"createdAt" bson:"created_at"`
 }
 
-func NewChatMessage(sender string, receiver string, message string, timestamp time.Time) *ChatMessage {
+func NewChatMessage(sender string, receiver string, message string, status MessageStatus) *ChatMessage {
 	return &ChatMessage{
-		Sender:    sender,
-		Receiver:  receiver,
-		Message:   message,
-		Timestamp: primitive.NewDateTimeFromTime(timestamp),
+		Sender:   sender,
+		Receiver: receiver,
+		Message:  message,
+		Status:   status,
 	}
 }

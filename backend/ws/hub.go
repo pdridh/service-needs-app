@@ -29,6 +29,7 @@ func NewHub(chatStore chat.Store) *Hub {
 	// Assign handlers here
 	h.On(EventHello, HandleHelloEvent)
 	h.On(EventChat, h.HandleChatEvent)
+	h.On(EventChatSeen, h.HandleChatSeenEvent)
 
 	return h
 }
