@@ -40,3 +40,7 @@ type EventContext struct {
 type EventHelloPayload struct {
 	Message string `json:"message"`
 }
+
+type EventSeenPayload struct {
+	MessageID string `json:"messageID"`
+}

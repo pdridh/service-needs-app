@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,6 +12,7 @@ import (
 
 type Store interface {
 	CreateChatMessage(ctx context.Context, c *ChatMessage) error
+	GetMessageByID(ctx context.Context, id string) (*ChatMessage, error)
 	GetMessagesForChat(ctx context.Context, sender string, receiver string) ([]ChatMessage, error)
 	HasMessagedBefore(ctx context.Context, sender string, receiver string) (bool, error)
 	UpdateMessageStatus(ctx context.Context, id string, status MessageStatus) error
@@ -78,6 +80,32 @@ func (s *mongoStore) GetMessagesForChat(ctx context.Context, sender string, rece
 	}
 
 	return chats, nil
+}
+
+func (s *mongoStore) GetMessageByID(ctx context.Context, id string) (*ChatMessage, error) {
+
+	idPrim, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{
+		"_id": idPrim,
+	}
+
+	var c ChatMessage
+	err = s.coll.FindOne(ctx, filter).Decode(&c)
+
+	if err == mongo.ErrNoDocuments {
+		log.Println("couldnt find coument??")
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, err
 }
 
 func (s *mongoStore) UpdateMessageStatus(ctx context.Context, id string, status MessageStatus) error {

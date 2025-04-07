@@ -3,6 +3,7 @@ package ws
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/coder/websocket"
@@ -117,5 +118,33 @@ func (h *Hub) HandleChatEvent(e EventContext) {
 }
 
 func (h *Hub) HandleChatSeenEvent(e EventContext) {
-	// TODO implement chat seen
+	var p EventSeenPayload
+	err := e.Event.ParsePayloadInto(&p)
+	if err != nil {
+		return
+	}
+
+	// Verify first
+	// First get the message
+	m, err := h.chatStore.GetMessageByID(context.Background(), p.MessageID)
+	if err != nil || m == nil {
+		log.Println(m, err)
+		return
+	}
+
+	// Now Check if this client was the receiver for that message
+	if m.Receiver != e.Client.ID {
+		return
+	}
+
+	m.Status = chat.StatusMessageSeen
+	// Otherwise we can just update the database/inform the client
+	if err := h.chatStore.UpdateMessageStatus(context.Background(), m.ID.Hex(), chat.StatusMessageSeen); err != nil {
+		return // TODO inform that its server's fault? weird ass case
+	}
+
+	// Finally inform the other client of the seen update, if they are connected
+	if c, ok := h.clients[m.Sender]; ok {
+		c.Send <- Event{Code: EventChat, Payload: m}
+	}
 }
