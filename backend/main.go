@@ -11,6 +11,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/pdridh/service-needs-app/backend/auth"
 	"github.com/pdridh/service-needs-app/backend/business"
+	"github.com/pdridh/service-needs-app/backend/chat"
 	"github.com/pdridh/service-needs-app/backend/config"
 	"github.com/pdridh/service-needs-app/backend/consumer"
 	"github.com/pdridh/service-needs-app/backend/db"
@@ -27,9 +28,6 @@ func main() {
 	db.ConnectToDB()
 	defer db.DisconnectFromDB()
 
-	hub := ws.NewHub()
-	go hub.Run()
-
 	validate := validator.New()
 
 	// TODO this feels redundant and shitty change this idk
@@ -37,6 +35,10 @@ func main() {
 	businessStore := business.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().BusinessCollectionName))
 	consumerStore := consumer.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ConsumerCollectionName))
 	reviewStore := review.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, config.Server().ReviewCollectionName))
+	chatStore := chat.NewMongoStore(db.GetCollectionFromDB(config.Server().DatabaseName, "chatMessage"))
+
+	hub := ws.NewHub(chatStore)
+	go hub.Run()
 
 	wsHandler := ws.NewHandler(hub)
 

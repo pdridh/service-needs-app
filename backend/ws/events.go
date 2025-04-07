@@ -19,7 +19,7 @@ type Event struct {
 }
 
 // This method marshals the payload and then loads that into v. v is expected to be a ptr, otherwise the changes wont reflect for the caller.
-// Returns error if anything failed, nil otherwise.
+// Returns error if anything failed, nil otherwise. Can also be used to check if the payload for the event is valid.
 func (e *Event) ParsePayloadInto(v any) error {
 	data, err := json.Marshal(e.Payload)
 	if err != nil {
@@ -43,6 +43,6 @@ type EventHelloPayload struct {
 type EventChatPayload struct {
 	Sender    string    `json:"sender"`
 	Receiver  string    `json:"receiver"`
-	Message   string    `json:"message"`
+	Message   string    `json:"message"` // TODO probably handle attachments and shit (no idea how)
 	Timestamp time.Time `json:"timestamp"`
 }

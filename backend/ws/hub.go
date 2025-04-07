@@ -2,6 +2,7 @@ package ws
 
 import (
 	"github.com/coder/websocket"
+	"github.com/pdridh/service-needs-app/backend/chat"
 )
 
 // Hub maintains active clients and handles events
@@ -11,16 +12,18 @@ type Hub struct {
 	unregister    chan *Client
 	eventRouter   chan EventContext
 	eventHandlers map[EventCode]EventHandler
+	chatStore     chat.Store
 }
 
 // NewHub creates a new hub instance.
-func NewHub() *Hub {
+func NewHub(chatStore chat.Store) *Hub {
 	h := &Hub{
 		clients:       make(map[string]*Client),
 		register:      make(chan *Client),
 		unregister:    make(chan *Client),
 		eventRouter:   make(chan EventContext),
 		eventHandlers: make(map[EventCode]EventHandler),
+		chatStore:     chatStore,
 	}
 
 	// Assign handlers here

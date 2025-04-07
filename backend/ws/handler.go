@@ -7,6 +7,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/pdridh/service-needs-app/backend/api"
+	"github.com/pdridh/service-needs-app/backend/chat"
 )
 
 type Handler struct {
@@ -54,11 +55,16 @@ func (h *Hub) HandleChatEvent(e EventContext) {
 	if err != nil {
 		return
 	}
+	// TODO verify if the receiver is real and allows the sender to send message to it.
+	// TODO something like: receiverStore.getReceiver(p.Receiver) -> check and then some kinda isAllowedTo(p.Sender, p.Receiver) or sum
 
 	p.Timestamp = e.Timestamp
 	p.Sender = e.Client.ID
 
 	if c, ok := h.clients[p.Receiver]; ok {
 		c.Send <- Event{Code: EventChat, Payload: p}
+
+		// Can store after sending to the conn cuz its more responsive
+		h.chatStore.CreateChatMessage(context.Background(), chat.NewChatMessage(p.Sender, p.Receiver, p.Message, p.Timestamp))
 	}
 }
