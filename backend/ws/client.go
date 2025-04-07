@@ -77,7 +77,7 @@ func (c *Client) ReadPump(ctx context.Context, cancel context.CancelFunc) {
 			eventContext := EventContext{
 				Event:     e,
 				Client:    c,
-				Timestamp: time.Now(),
+				Timestamp: time.Now().UTC(),
 			}
 
 			c.Hub.eventRouter <- eventContext

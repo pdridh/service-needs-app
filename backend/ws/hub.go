@@ -10,11 +10,8 @@ type Hub struct {
 	register      chan *Client
 	unregister    chan *Client
 	eventRouter   chan EventContext
-	eventHandlers map[string]EventHandler
+	eventHandlers map[EventCode]EventHandler
 }
-
-// Given the event context handles the event.
-type EventHandler func(e EventContext)
 
 // NewHub creates a new hub instance.
 func NewHub() *Hub {
@@ -23,18 +20,19 @@ func NewHub() *Hub {
 		register:      make(chan *Client),
 		unregister:    make(chan *Client),
 		eventRouter:   make(chan EventContext),
-		eventHandlers: make(map[string]EventHandler),
+		eventHandlers: make(map[EventCode]EventHandler),
 	}
 
 	// Assign handlers here
 	h.On(EventHello, HandleHelloEvent)
+	h.On(EventChat, h.HandleChatEvent)
 
 	return h
 }
 
 // Simple wrapper function that assigns the given event string to be handled by the given EventHandler.
 // Overwrites the previous handler if it has already been assigned.
-func (h *Hub) On(e string, f EventHandler) {
+func (h *Hub) On(e EventCode, f EventHandler) {
 	h.eventHandlers[e] = f
 }
 

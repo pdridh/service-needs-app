@@ -13,6 +13,9 @@ type Handler struct {
 	hub *Hub
 }
 
+// Given the event context handles the event.
+type EventHandler func(e EventContext)
+
 func NewHandler(hub *Hub) *Handler {
 	return &Handler{hub: hub}
 }
@@ -42,4 +45,20 @@ func (h *Handler) Accept() http.HandlerFunc {
 // Sends hello back to the client with its id (tester function probably temproray)
 func HandleHelloEvent(e EventContext) {
 	e.Client.Send <- Event{Code: EventHello, Payload: EventHelloPayload{Message: fmt.Sprintf("Hello %s", e.Client.ID)}}
+}
+
+func (h *Hub) HandleChatEvent(e EventContext) {
+	var p EventChatPayload
+
+	err := e.Event.ParsePayloadInto(&p)
+	if err != nil {
+		return
+	}
+
+	p.Timestamp = e.Timestamp
+	p.Sender = e.Client.ID
+
+	if c, ok := h.clients[p.Receiver]; ok {
+		c.Send <- Event{Code: EventChat, Payload: p}
+	}
 }
