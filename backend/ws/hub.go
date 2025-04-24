@@ -1,7 +1,13 @@
 package ws
 
 import (
+	"context"
+	"time"
+
 	"github.com/coder/websocket"
+	"github.com/pdridh/service-needs-app/backend/business"
+	"github.com/pdridh/service-needs-app/backend/chat"
+	"github.com/pdridh/service-needs-app/backend/consumer"
 )
 
 // Hub maintains active clients and handles events
@@ -10,31 +16,36 @@ type Hub struct {
 	register      chan *Client
 	unregister    chan *Client
 	eventRouter   chan EventContext
-	eventHandlers map[string]EventHandler
+	eventHandlers map[EventCode]EventHandler
+	chatStore     chat.Store
+	businessStore business.Store
+	consumerStore consumer.Store
 }
 
-// Given the event context handles the event.
-type EventHandler func(e EventContext)
-
 // NewHub creates a new hub instance.
-func NewHub() *Hub {
+func NewHub(businessStore business.Store, consumerStore consumer.Store, chatStore chat.Store) *Hub {
 	h := &Hub{
 		clients:       make(map[string]*Client),
 		register:      make(chan *Client),
 		unregister:    make(chan *Client),
 		eventRouter:   make(chan EventContext),
-		eventHandlers: make(map[string]EventHandler),
+		eventHandlers: make(map[EventCode]EventHandler),
+		chatStore:     chatStore,
+		businessStore: businessStore,
+		consumerStore: consumerStore,
 	}
 
 	// Assign handlers here
 	h.On(EventHello, HandleHelloEvent)
+	h.On(EventChat, h.HandleChatEvent)
+	h.On(EventChatSeen, h.HandleChatSeenEvent)
 
 	return h
 }
 
 // Simple wrapper function that assigns the given event string to be handled by the given EventHandler.
 // Overwrites the previous handler if it has already been assigned.
-func (h *Hub) On(e string, f EventHandler) {
+func (h *Hub) On(e EventCode, f EventHandler) {
 	h.eventHandlers[e] = f
 }
 
@@ -52,6 +63,29 @@ func (h *Hub) RouteEvent(e EventContext) {
 func (h *Hub) RegisterClient(c *Client) {
 	// TODO handle the case where client is already connected (for example two tabs opened idkididkdidkdidkd)
 	h.clients[c.ID] = c
+
+	ctx := context.Background()
+	recvdMsgs, err := h.chatStore.GetMessagesForWithStatus(ctx, c.ID, chat.StatusMessageSent)
+	if err != nil {
+		h.unregister <- c
+		return
+	}
+
+	err = h.chatStore.DeliverMessagesBeforeFor(ctx, time.Now().UTC(), c.ID)
+	if err != nil {
+		h.unregister <- c
+		return
+	}
+
+	for _, m := range recvdMsgs {
+		m.Status = chat.StatusMessageDelivered
+		c.Send <- Event{Code: EventChat, Payload: m}
+
+		// Inform the other clients that their message has been delivered
+		if other, ok := h.clients[m.ID.Hex()]; ok {
+			other.Send <- Event{Code: EventChat, Payload: m}
+		}
+	}
 }
 
 // Removes the given client c from the clients map if it exists.

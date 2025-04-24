@@ -3,15 +3,21 @@ package ws
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/coder/websocket"
 	"github.com/pdridh/service-needs-app/backend/api"
+	"github.com/pdridh/service-needs-app/backend/chat"
+	"github.com/pdridh/service-needs-app/backend/user"
 )
 
 type Handler struct {
 	hub *Hub
 }
+
+// Given the event context handles the event.
+type EventHandler func(e EventContext)
 
 func NewHandler(hub *Hub) *Handler {
 	return &Handler{hub: hub}
@@ -26,9 +32,10 @@ func (h *Handler) Accept() http.HandlerFunc {
 		}
 
 		u := api.CurrentUserID(r)
+		t := api.CurrentUserType(r)
 
 		// Create a new client
-		client := NewClient(conn, u, h.hub)
+		client := NewClient(conn, u, t, h.hub)
 		h.hub.register <- client
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -42,4 +49,102 @@ func (h *Handler) Accept() http.HandlerFunc {
 // Sends hello back to the client with its id (tester function probably temproray)
 func HandleHelloEvent(e EventContext) {
 	e.Client.Send <- Event{Code: EventHello, Payload: EventHelloPayload{Message: fmt.Sprintf("Hello %s", e.Client.ID)}}
+}
+
+func (h *Hub) HandleChatEvent(e EventContext) {
+	type RequestPayload struct {
+		Sender   string `json:"sender"`
+		Receiver string `json:"receiver"`
+		Message  string `json:"message"` // TODO probably handle attachments and shit (no idea how)
+	}
+
+	var p RequestPayload
+
+	err := e.Event.ParsePayloadInto(&p)
+	if err != nil {
+		return
+	}
+
+	// In case the sender tries to impersonate some another client
+	// * (PROBABLY SHOULD LOG IT IDK, SEC SHIT, FOR NOW WE JUST DROPPING THE EVENT)
+	if p.Sender != e.Client.ID {
+		return
+	}
+
+	// TODO maybe add a ban list (ts for later tho) :3
+	switch e.Client.Type {
+	case user.UserTypeBusiness:
+		// If ur a business u can only reply to clients (no solicitation)
+		// If the business is sending a message to an user that has already sent a message to it before
+		// Thefore the current receiver SHOULD be a sender before business can send a message.
+		if hasMsged, err := h.chatStore.HasMessagedBefore(context.Background(), p.Receiver, e.Client.ID); !hasMsged || err != nil {
+			return // No soliciting clients el o el
+		}
+		if c, err := h.consumerStore.GetConsumerByID(context.Background(), p.Receiver); c == nil || err != nil {
+			return // consumer doesnt exist
+		}
+	case user.UserTypeConsumer:
+		// Check if the business exists and IS a business
+		if b, err := h.businessStore.GetBusinessByID(p.Receiver); b == nil || err != nil {
+			return // business doesnt exist
+		}
+	}
+
+	// If it passed verification the message sending responsibility is now to the server.
+
+	msg := chat.NewChatMessage(e.Client.ID, p.Receiver, p.Message, chat.StatusMessageSent)
+	if err := h.chatStore.CreateChatMessage(context.Background(), msg); err != nil {
+		// TODO inform user that its server's fault the message wasnt delivered
+		return
+	}
+
+	// If the receiver's connection is online we can send now
+	if c, ok := h.clients[p.Receiver]; ok {
+
+		msg.Status = chat.StatusMessageDelivered
+		if err := h.chatStore.UpdateMessageStatus(context.Background(), msg.ID.Hex(), msg.Status); err != nil {
+			// TODO Again, inform sender that the server failed to deliver
+			return
+		}
+
+		// Send the message to the receiver
+		c.Send <- Event{Code: EventChat, Payload: msg}
+	}
+
+	// Update the sender about the message
+	if c, ok := h.clients[e.Client.ID]; ok {
+		c.Send <- Event{Code: EventChat, Payload: msg}
+	}
+}
+
+func (h *Hub) HandleChatSeenEvent(e EventContext) {
+	var p EventSeenPayload
+	err := e.Event.ParsePayloadInto(&p)
+	if err != nil {
+		return
+	}
+
+	// Verify first
+	// First get the message
+	m, err := h.chatStore.GetMessageByID(context.Background(), p.MessageID)
+	if err != nil || m == nil {
+		log.Println(m, err)
+		return
+	}
+
+	// Now Check if this client was the receiver for that message
+	if m.Receiver != e.Client.ID {
+		return
+	}
+
+	m.Status = chat.StatusMessageSeen
+	// Otherwise we can just update the database/inform the client
+	if err := h.chatStore.UpdateMessageStatus(context.Background(), m.ID.Hex(), chat.StatusMessageSeen); err != nil {
+		return // TODO inform that its server's fault? weird ass case
+	}
+
+	// Finally inform the other client of the seen update, if they are connected
+	if c, ok := h.clients[m.Sender]; ok {
+		c.Send <- Event{Code: EventChat, Payload: m}
+	}
 }
