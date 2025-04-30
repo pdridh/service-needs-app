@@ -48,7 +48,7 @@ func ParseQueryParams(q url.Values, dataHolder any) {
 		}
 
 		switch kind {
-		case reflect.Int:
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			intVal, err := strconv.ParseInt(queryVal, 10, 64)
 			if err == nil {
 				fieldInput.SetInt(intVal)
