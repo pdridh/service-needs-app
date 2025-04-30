@@ -31,8 +31,8 @@ func (h *Handler) Accept() http.HandlerFunc {
 			return
 		}
 
-		u := api.CurrentUserID(r)
-		t := api.CurrentUserType(r)
+		u := user.CurrentUserID(r)
+		t := user.CurrentUserType(r)
 
 		// Create a new client
 		client := NewClient(conn, u, t, h.hub)

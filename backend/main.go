@@ -42,13 +42,16 @@ func main() {
 
 	wsHandler := ws.NewHandler(hub)
 
+	userService := user.NewService(userStore, validate)
+	userHandler := user.NewHandler(userService)
+
 	businessService := business.NewService(businessStore, reviewStore, validate)
 	businessHandler := business.NewHandler(businessService)
 
 	authService := auth.NewService(db.GetClient(), userStore, businessStore, consumerStore, validate)
 	authHandler := auth.NewHandler(authService)
 
-	srv := server.New(authHandler, businessHandler, wsHandler)
+	srv := server.New(wsHandler, userHandler, businessHandler, authHandler)
 
 	httpServer := &http.Server{
 		Addr:         net.JoinHostPort(config.Server().Host, config.Server().Port),

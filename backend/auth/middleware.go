@@ -35,7 +35,7 @@ func Middleware(next http.HandlerFunc, allow ...user.UserType) http.HandlerFunc 
 
 		// If the token is valid and the claims were extracted then create a
 		// new context with the current user for future handlers to access.
-		ctx := context.WithValue(r.Context(), api.ContextUserKey, api.CurrentUser{ID: c.UserID, Type: c.UserType})
+		ctx := context.WithValue(r.Context(), user.ContextUserKey, user.CurrentUser{ID: c.UserID, Type: c.UserType})
 
 		// If no specific roles are required
 		if len(allow) == 0 {

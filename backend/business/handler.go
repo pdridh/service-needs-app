@@ -5,6 +5,7 @@ import (
 
 	"github.com/pdridh/service-needs-app/backend/api"
 	"github.com/pdridh/service-needs-app/backend/review"
+	"github.com/pdridh/service-needs-app/backend/user"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -23,8 +24,8 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) GetBusinesses() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		var params QueryOptions
+
 		api.ParseQueryParams(r.URL.Query(), &params)
 
 		b, _, err := h.Service.GetBusinesses(r.Context(), params)
@@ -46,7 +47,7 @@ func (h *Handler) AddReview() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		businessIDStr := r.PathValue("id")
-		consumerIDstr := api.CurrentUserID(r)
+		consumerIDstr := user.CurrentUserID(r)
 
 		var p ReviewPayload
 

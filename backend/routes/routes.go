@@ -14,9 +14,10 @@ import (
 // of all the routes (ideally)
 func AddRoutes(
 	mux *http.ServeMux,
-	authHandler *auth.Handler,
-	businessHandler *business.Handler,
 	wsHandler *ws.Handler,
+	userHandler *user.Handler,
+	businessHandler *business.Handler,
+	authHandler *auth.Handler,
 ) {
 	mux.Handle("POST /auth/register/businesses", authHandler.RegisterBusiness())
 	mux.Handle("POST /auth/register/consumers", authHandler.RegisterConsumer())
@@ -28,6 +29,9 @@ func AddRoutes(
 
 	mux.Handle("GET /api/v1/businesses/{id}/reviews", auth.Middleware(businessHandler.GetBusinessReviews()))
 	mux.Handle("POST /api/v1/businesses/{id}/reviews", auth.Middleware(businessHandler.AddReview(), user.UserTypeConsumer))
+
+	// Admin routes
+	mux.Handle("GET /api/v1/users", auth.Middleware(userHandler.GetUsers(), user.UserTypeAdmin))
 
 	mux.Handle("/", http.NotFoundHandler())
 }
