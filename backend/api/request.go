@@ -30,36 +30,47 @@ func ParseJSON(r *http.Request, v any) error {
 
 // Given the query params in the url (for GETs) and a struct that has strongly typed fields.
 // Extracts the field from the query param if it exists and parses it into the type of the field it is.
-func ParseQueryParams(q url.Values, params any) {
-	v := reflect.ValueOf(params).Elem()
+func ParseQueryParams(q url.Values, dataHolder any) {
+	dhType := reflect.TypeOf(dataHolder)
+	dhVal := reflect.ValueOf(dataHolder)
 
-	for i := range v.NumField() {
-		field := v.Field(i)
-		fieldType := v.Type().Field(i)
-		paramValue := q.Get(fieldType.Tag.Get("json")) // Get from query
+	for i := range dhType.Elem().NumField() {
+		field := dhType.Elem().Field(i)
+		key := field.Tag.Get("json")
+		kind := field.Type.Kind()
 
-		if paramValue == "" {
+		queryVal := q.Get(key)
+
+		fieldInput := dhVal.Elem().Field(i)
+
+		if !fieldInput.CanSet() {
 			continue
 		}
 
-		switch field.Kind() {
-		case reflect.Int64, reflect.Int32, reflect.Int:
-			val, err := strconv.Atoi(paramValue)
+		switch kind {
+		case reflect.Int:
+			intVal, err := strconv.ParseInt(queryVal, 10, 64)
 			if err == nil {
-				field.SetInt(int64(val))
+				fieldInput.SetInt(intVal)
+			}
+		case reflect.String:
+			fieldInput.SetString(queryVal)
+		case reflect.Bool:
+			val, err := strconv.ParseBool(queryVal)
+			if err == nil {
+				fieldInput.SetBool(val)
 			}
 		case reflect.Float64:
-			val, err := strconv.ParseFloat(paramValue, 64)
+			val, err := strconv.ParseFloat(queryVal, 64)
 			if err == nil {
-				field.SetFloat(val)
+				fieldInput.SetFloat(val)
 			}
-		case reflect.Bool:
-			val, err := strconv.ParseBool(paramValue)
+		case reflect.Struct, reflect.Map:
+			val := reflect.New(field.Type)
+			err := json.Unmarshal([]byte(queryVal), val.Interface())
 			if err == nil {
-				field.SetBool(val)
+				fieldInput.Set(val.Elem())
 			}
-		default:
-			field.SetString(paramValue)
 		}
 	}
 }
