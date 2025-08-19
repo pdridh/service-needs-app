@@ -10,3 +10,8 @@ type UserClaims struct {
 	UserType user.UserType
 	jwt.RegisteredClaims
 }
+
+type AuthUser struct {
+	ID   string        `json:id`
+	Type user.UserType `json:type`
+}

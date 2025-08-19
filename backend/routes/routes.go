@@ -21,6 +21,7 @@ func AddRoutes(
 	mux.Handle("POST /auth/register/businesses", authHandler.RegisterBusiness())
 	mux.Handle("POST /auth/register/consumers", authHandler.RegisterConsumer())
 
+	mux.Handle("GET /auth", auth.Middleware(authHandler.GetAuth(), ""))
 	mux.Handle("POST /auth/login", authHandler.Login())
 	mux.Handle("/ws", auth.Middleware(wsHandler.Accept(), ""))
 

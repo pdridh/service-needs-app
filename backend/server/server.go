@@ -7,6 +7,7 @@ import (
 	"github.com/pdridh/service-needs-app/backend/business"
 	"github.com/pdridh/service-needs-app/backend/routes"
 	"github.com/pdridh/service-needs-app/backend/ws"
+	"github.com/rs/cors"
 )
 
 // Creates a new server, assigns it its routes with routes.AddRoutes()
@@ -18,9 +19,14 @@ func New(authHandler *auth.Handler, businessHandler *business.Handler, wsHandler
 	// Add all the routes
 	routes.AddRoutes(mux, authHandler, businessHandler, wsHandler)
 
-	var handler http.Handler = mux
-
 	// TODO add top level middlewares here (cors, ratelimiter, etc.)
+
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"}, // TODO read this from config
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+	}).Handler(mux)
 
 	return handler
 }

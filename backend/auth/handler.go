@@ -174,3 +174,34 @@ func (h *Handler) Login() http.HandlerFunc {
 		api.WriteJSON(w, r, http.StatusOK, "Login succesfull!")
 	}
 }
+
+func (h *Handler) GetAuth() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		jCookie, err := r.Cookie("jwt")
+		if err != nil {
+			api.WriteError(w, r, http.StatusBadRequest, "Bad json request", nil)
+			return
+		}
+
+		j := jCookie.Value
+
+		t, err := ValidateJWT(j)
+		if err != nil {
+			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			return
+		}
+
+		c, err := UserClaimsFromJWT(t)
+		if err != nil {
+			api.WriteError(w, r, http.StatusUnauthorized, "invalid token", nil)
+			return
+		}
+
+		auth := AuthUser{
+			ID:   c.UserID,
+			Type: c.UserType,
+		}
+
+		api.WriteJSON(w, r, http.StatusOK, auth)
+	}
+}
