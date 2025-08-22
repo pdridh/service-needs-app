@@ -4,6 +4,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -40,6 +41,14 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, status int, v any) error 
 func WriteError(w http.ResponseWriter, r *http.Request, status int, message string, errors any) {
 	if err := WriteJSON(w, r, status, NewAPIError(status, message, errors)); err != nil {
 		// TODO weird ahh error need to handle ts
+	}
+}
+
+func WriteSuccess(w http.ResponseWriter, r *http.Request, status int, message string, data any) {
+	s := NewSuccessResponse(status, message, data)
+
+	if err := WriteJSON(w, r, status, s); err != nil {
+		log.Println("failed to write to request")
 	}
 }
 

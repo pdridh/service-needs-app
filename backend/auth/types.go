@@ -12,6 +12,6 @@ type UserClaims struct {
 }
 
 type AuthUser struct {
-	ID   string        `json:id`
-	Type user.UserType `json:type`
+	ID   string        `json:"id"`
+	Type user.UserType `json:"type"`
 }

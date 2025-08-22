@@ -47,9 +47,15 @@ func SetJWTCookie(w http.ResponseWriter, token string) {
 		Value:    token,
 		MaxAge:   int(config.Server().JWTExpiration.Seconds()),
 		HttpOnly: true,
-		Secure:   config.Server().Env == "production",
-		SameSite: http.SameSiteNoneMode,
 		Path:     "/",
+	}
+
+	if config.Server().Env == "production" {
+		cookie.SameSite = http.SameSiteNoneMode
+		cookie.Secure = false
+	} else {
+		cookie.SameSite = http.SameSiteLaxMode
+		cookie.Secure = false
 	}
 
 	http.SetCookie(w, &cookie)
