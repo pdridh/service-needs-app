@@ -10,7 +10,7 @@ type Business struct {
 	ID          primitive.ObjectID  `json:"id" bson:"_id"`
 	Name        string              `json:"name" bson:"name"`
 	Category    string              `json:"category" bson:"category"`
-	Location    common.GeoJSONPoint `json:"location" bson:"location"` // TODO change this to somehting better like coords or something idk
+	Location    common.GeoJSONPoint `json:"location" bson:"location"`
 	Description string              `json:"description" bson:"description"`
 	Verified    bool                `json:"verified" bson:"verified"`
 	CreatedAt   primitive.DateTime  `json:"createdAt" bson:"created_at"`
@@ -19,6 +19,17 @@ type Business struct {
 	AvgRating   *float64            `json:"averageRating,omitempty" bson:"average_rating,omitempty"`
 	ReviewCount int                 `json:"reviewCount" bson:"review_count"`
 	// TODO add other information like available time, documents, profile stuff etc,etc...
+}
+
+type BusinessDetails struct {
+	Name        string              `json:"name" bson:"name"`
+	Category    string              `json:"category" bson:"category"`
+	Location    common.GeoJSONPoint `json:"location" bson:"location"`
+	Description string              `json:"description" bson:"description"`
+	Verified    bool                `json:"verified" bson:"verified"`
+	Distance    *float64            `json:"distance,omitempty" bson:"distance,omitempty"`
+	AvgRating   *float64            `json:"averageRating,omitempty" bson:"average_rating,omitempty"`
+	ReviewCount int                 `json:"reviewCount" bson:"review_count"`
 }
 
 // QueryOptions represents all possible query parameters for business listing

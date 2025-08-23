@@ -20,3 +20,10 @@ type User struct {
 	CreatedAt primitive.DateTime `json:"createdAt" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updatedAt" bson:"updated_at"`
 }
+
+type UserProfile struct {
+	ID      string      `json:"id"`
+	Email   string      `json:"email"`
+	Type    UserType    `json:"type"`
+	Details interface{} `json:"details"`
+}

@@ -175,7 +175,7 @@ func (h *Handler) Login() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) GetAuth() http.HandlerFunc {
+func (h *Handler) Me() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jCookie, err := r.Cookie("jwt")
 		if err != nil {
@@ -197,11 +197,13 @@ func (h *Handler) GetAuth() http.HandlerFunc {
 			return
 		}
 
-		auth := AuthUser{
-			ID:   c.UserID,
-			Type: c.UserType,
+		// Authentication is done at this point
+		me, err := h.Service.Me(r.Context(), c.UserID, c.UserType, c.UserEmail)
+		if err != nil {
+			api.WriteInternalError(w, r)
+			return
 		}
 
-		api.WriteSuccess(w, r, http.StatusOK, "Retrival succesful", auth)
+		api.WriteSuccess(w, r, http.StatusOK, "Profile retrived successfully", me)
 	}
 }

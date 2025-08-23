@@ -6,12 +6,8 @@ import (
 )
 
 type UserClaims struct {
-	UserID   string
-	UserType user.UserType
+	UserID    string
+	UserType  user.UserType
+	UserEmail string
 	jwt.RegisteredClaims
-}
-
-type AuthUser struct {
-	ID   string        `json:"id"`
-	Type user.UserType `json:"type"`
 }

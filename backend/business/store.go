@@ -2,6 +2,7 @@ package business
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -159,6 +160,7 @@ func (s *mongoStore) GetBusinesses(ctx context.Context, options QueryOptions) ([
 }
 
 func (s *mongoStore) GetBusinessByID(id string) (*Business, error) {
+	log.Println(id)
 	idPrim, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err

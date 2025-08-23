@@ -199,7 +199,7 @@ func (s *service) AuthenticateUser(email string, password string) (string, error
 	}
 
 	// Everything went well so generate a token for the user
-	t, err := GenerateJWT(u.ID.Hex(), u.Type, config.Server().JWTExpiration)
+	t, err := GenerateJWT(u.ID.Hex(), u.Type, u.Email, config.Server().JWTExpiration)
 	if err != nil {
 		return "", err
 	}
@@ -218,4 +218,27 @@ func (s *service) IsEmailAvailable(email string) (bool, error) {
 	}
 
 	return u == nil, nil
+}
+
+func (s *service) Me(ctx context.Context, userID string, userType user.UserType, userEmail string) (*user.UserProfile, error) {
+	profile := &user.UserProfile{ID: userID, Email: userEmail, Type: userType, Details: nil}
+
+	if userType == user.UserTypeConsumer {
+		c, err := s.consumerStore.GetConsumerByID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		profile.Details = consumer.ConsumerDetails{FirstName: c.FirstName, LastName: c.LastName, Verified: c.Verified}
+	} else if userType == user.UserTypeBusiness {
+		b, err := s.businessStore.GetBusinessByID(userID)
+		if err != nil {
+			return nil, err
+		}
+
+		profile.Details = business.BusinessDetails{Name: b.Name, Category: b.Category, Location: b.Location, Description: b.Description, Verified: b.Verified}
+	}
+
+	return profile, nil
+
 }

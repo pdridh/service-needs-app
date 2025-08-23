@@ -12,3 +12,9 @@ type Consumer struct {
 	CreatedAt primitive.DateTime `json:"createdAt" bson:"created_at"`
 	UpdatedAt primitive.DateTime `json:"updatedAt" bson:"updated_at"`
 }
+
+type ConsumerDetails struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Verified  bool   `json:"verified"`
+}
