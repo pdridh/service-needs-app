@@ -25,7 +25,7 @@ func NewHandler(hub *Hub) *Handler {
 
 func (h *Handler) Accept() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := websocket.Accept(w, r, nil)
+		conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: []string{"localhost:5173"}}) // TODO read this from config
 		if err != nil {
 			return
 		}
