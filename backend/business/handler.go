@@ -22,18 +22,25 @@ func NewHandler(service *Service) *Handler {
 
 func (h *Handler) GetBusinesses() http.HandlerFunc {
 
+	type Response struct {
+		Businesses []Business `json:"businesses"`
+		Page       int64      `json:"page"`
+		PageSize   int64      `json:"pageSize"`
+		Total      int64      `json:"total"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		var params QueryOptions
 		api.ParseQueryParams(r.URL.Query(), &params)
 
-		b, _, err := h.Service.GetBusinesses(r.Context(), params)
+		b, meta, err := h.Service.GetBusinesses(r.Context(), params)
 		if err != nil {
 			api.WriteInternalError(w, r)
 			return
 		}
 
-		api.WriteJSON(w, r, http.StatusOK, b)
+		api.WriteSuccess(w, r, http.StatusOK, "Retrieval succesful", Response{Businesses: b, Page: meta.Page, PageSize: meta.PageSize, Total: meta.Total})
 	}
 }
 

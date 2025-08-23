@@ -44,3 +44,9 @@ type QueryOptions struct {
 	Latitude  float64        `json:"latitude"`
 	MaxDist   float64        `json:"maxDist"` // in meters
 }
+
+type PaginationMetadata struct {
+	Page     int64 `json:"page"`
+	PageSize int64 `json:"pageSize"`
+	Total    int64 `json:"total"`
+}

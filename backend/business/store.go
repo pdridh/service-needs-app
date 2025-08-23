@@ -10,7 +10,7 @@ import (
 )
 
 type Store interface {
-	GetBusinesses(ctx context.Context, options QueryOptions) ([]Business, int64, error)
+	GetBusinesses(ctx context.Context, options QueryOptions) ([]Business, *PaginationMetadata, error)
 	GetBusinessByID(id string) (*Business, error)
 	CreateBusiness(ctx context.Context, b *Business) error
 }
@@ -24,7 +24,7 @@ func NewMongoStore(coll *mongo.Collection) *mongoStore {
 	return &mongoStore{coll: coll}
 }
 
-func (s *mongoStore) GetBusinesses(ctx context.Context, options QueryOptions) ([]Business, int64, error) {
+func (s *mongoStore) GetBusinesses(ctx context.Context, options QueryOptions) ([]Business, *PaginationMetadata, error) {
 	// This shit is so horrible i cannot even start, making me regret using mongo ong
 	pipeline := mongo.Pipeline{}
 
@@ -109,13 +109,13 @@ func (s *mongoStore) GetBusinesses(ctx context.Context, options QueryOptions) ([
 	// Get count results
 	countCursor, err := s.coll.Aggregate(ctx, countPipeline)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
 	defer countCursor.Close(ctx)
 
 	var countResult []bson.M
 	if err = countCursor.All(ctx, &countResult); err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
 
 	// Set default total count
@@ -146,16 +146,16 @@ func (s *mongoStore) GetBusinesses(ctx context.Context, options QueryOptions) ([
 
 	cursor, err := s.coll.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var businesses []Business
 	if err = cursor.All(ctx, &businesses); err != nil {
-		return nil, 0, err
+		return nil, nil, err
 	}
 
-	return businesses, totalCount, nil
+	return businesses, &PaginationMetadata{Page: options.Page, PageSize: options.PageSize, Total: totalCount}, nil
 }
 
 func (s *mongoStore) GetBusinessByID(id string) (*Business, error) {

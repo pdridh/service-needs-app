@@ -23,7 +23,7 @@ func NewService(bstore Store, rstore review.Store, validate *validator.Validate)
 	}
 }
 
-func (s *Service) GetBusinesses(ctx context.Context, options QueryOptions) ([]Business, int64, error) {
+func (s *Service) GetBusinesses(ctx context.Context, options QueryOptions) ([]Business, *PaginationMetadata, error) {
 	return s.businessStore.GetBusinesses(ctx, options)
 }
 
