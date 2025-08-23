@@ -25,9 +25,8 @@ func NewHandler(hub *Hub) *Handler {
 
 func (h *Handler) Accept() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := websocket.Accept(w, r, nil) // TODO make this more secure and shti
+		conn, err := websocket.Accept(w, r, nil)
 		if err != nil {
-			api.WriteInternalError(w, r)
 			return
 		}
 
